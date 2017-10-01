@@ -2,7 +2,7 @@
   "MNIST": {
     "data": [{
       "name": "images",
-      "path": "https://storage.googleapis.com/learnjs-data/model-builder/mnist_images.png",
+      "path": "http://127.0.0.1:8080/src/images/mnist_images.png",
       "dataType": "png",
       "shape": [28, 28, 1]
     }, {
