@@ -56,15 +56,15 @@ limitations under the License.
 .data-stats {
   margin-top: 10px;
 }
-#inference {
+#real, #generated {
   border-right: 1px solid rgba(0, 0, 0, 0.1);
   flex-grow: 2;
   position: relative;
 }
-#inference-container {
+#real-container, #generated-container {
   margin-top: 15px;
 }
-#inference > div {
+#real > div, #generated > div {
   padding-left: 12px;
   padding-right: 12px;
 }
@@ -339,14 +339,25 @@ paper-progress {
       </div>
     </div>
   </div>
-  <div id="inference" class="ink-panel">
-    <div class="title">INFERENCE</div>
+
+  <div id="real" class="ink-panel">
+    <div class="title">REAL IMAGES</div>
     <div class="panel-content" hidden$="[[!isValid]]">
       <div class="examples-sec inference-stats-message">Inferences/sec: [[inferencesPerSec]]</div>
       <div class="inference-stats-message">Inference duration: [[inferenceDuration]]ms</div>
-      <div id="inference-container"></div>
+      <div id="real-container"></div>
     </div>
   </div>
+
+  <div id="generated" class="ink-panel">
+    <div class="title">GENERATED IMAGES</div>
+    <div class="panel-content" hidden$="[[!isValid]]">
+      <div class="examples-sec inference-stats-message">Generations/sec: [[generationsPerSec]]</div>
+      <div class="inference-stats-message">Generation duration: [[generationDuration]]ms</div>
+      <div id="generated-container"></div>
+    </div>
+  </div>
+
   <div id="train-stats" class="ink-panel">
     <div class="title">TRAIN STATS</div>
     <div class="panel-content">

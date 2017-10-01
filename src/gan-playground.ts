@@ -61,6 +61,8 @@ export let GANPlaygroundPolymer: new () => PolymerHTMLElement = PolymerElement({
     isValid: Boolean,
     inferencesPerSec: Number,
     inferenceDuration: Number,
+    generationsPerSec: Number,
+    generationDuration: Number,
     examplesTrained: Number,
     examplesPerSec: Number,
     totalTimeSec: String,
@@ -163,6 +165,8 @@ export class GANPlayground extends GANPlaygroundPolymer {
   private examplesTrained: number;
   private inferencesPerSec: number;
   private inferenceDuration: number;
+  private generationsPerSec: number;
+  private generationDuration: number;
 
   private inputLayer: ModelLayer;
   private hiddenLayers: ModelLayer[];
@@ -199,7 +203,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.optimizer = new MomentumOptimizer(this.learingRate, this.momentum);
 
     // Set up datasets.
-    this.populateDatasets();
+    // this.populateDatasets();
 
     this.querySelector('#dataset-dropdown .dropdown-content')
         .addEventListener(
@@ -289,6 +293,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.hiddenLayers = [];
     this.examplesPerSec = 0;
     this.inferencesPerSec = 0;
+    this.generationsPerSec = 0;
   }
 
   isTraining(applicationState: ApplicationState): boolean {
