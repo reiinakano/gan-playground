@@ -54,8 +54,8 @@ const IMAGE_DATA_INDEX = 0;
 const LABEL_DATA_INDEX = 1;
 
 // tslint:disable-next-line:variable-name
-export let ModelBuilderPolymer: new () => PolymerHTMLElement = PolymerElement({
-  is: 'model-builder',
+export let GANPlaygroundPolymer: new () => PolymerHTMLElement = PolymerElement({
+  is: 'gan-playground',
   properties: {
     inputShapeDisplay: String,
     isValid: Boolean,
@@ -97,7 +97,7 @@ export enum ApplicationState {
   TRAINING = 2
 }
 
-export class ModelBuilder extends ModelBuilderPolymer {
+export class GANPlayground extends GANPlaygroundPolymer {
   // Polymer properties.
   private isValid: boolean;
   private totalTimeSec: string;
@@ -929,4 +929,4 @@ export class ModelBuilder extends ModelBuilderPolymer {
   }
 }
 
-document.registerElement(ModelBuilder.prototype.is, ModelBuilder);
+document.registerElement(GANPlayground.prototype.is, GANPlayground);

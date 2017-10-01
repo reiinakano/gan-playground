@@ -20,7 +20,7 @@ import {PolymerElement, PolymerHTMLElement} from './polymer-spec';
 
 import * as layer_builder from './layer_builder';
 import {LayerBuilder, LayerName, LayerWeightsDict} from './layer_builder';
-import {ModelBuilder} from './model-builder';
+import {GANPlayground} from './gan-playground';
 import * as model_builder_util from './model_builder_util';
 
 // tslint:disable-next-line:variable-name
@@ -47,15 +47,15 @@ export class ModelLayer extends ModelLayerPolymer {
   private hasError: boolean;
   private errorMessages: string[];
 
-  private modelBuilder: ModelBuilder;
+  private ganPlayground: GANPlayground;
   layerBuilder: LayerBuilder;
   private inputShape: number[];
   private outputShape: number[];
 
   private paramContainer: HTMLDivElement;
 
-  initialize(modelBuilder: ModelBuilder, inputShape: number[]) {
-    this.modelBuilder = modelBuilder;
+  initialize(ganPlayground: GANPlayground, inputShape: number[]) {
+    this.ganPlayground = ganPlayground;
     this.paramContainer =
         this.querySelector('.param-container') as HTMLDivElement;
     this.layerNames = [
@@ -73,7 +73,7 @@ export class ModelLayer extends ModelLayerPolymer {
             });
 
     this.querySelector('#remove-layer').addEventListener('click', (event) => {
-      modelBuilder.removeLayer(this);
+      ganPlayground.removeLayer(this);
     });
   }
 
@@ -149,7 +149,7 @@ export class ModelLayer extends ModelLayerPolymer {
           layerParams[i].label, initialValue, layerParams[i].setValue,
           layerParams[i].type, layerParams[i].min, layerParams[i].max);
     }
-    this.modelBuilder.layerParamChanged();
+    this.ganPlayground.layerParamChanged();
   }
 
   loadParamsFromLayerBuilder(
@@ -183,7 +183,7 @@ export class ModelLayer extends ModelLayerPolymer {
         // tslint:disable-next-line:no-any
         setValue((event.target as any).value as string);
       }
-      this.modelBuilder.layerParamChanged();
+      this.ganPlayground.layerParamChanged();
     });
     setValue(initialValue);
   }
