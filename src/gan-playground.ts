@@ -29,6 +29,7 @@ import {LayerBuilder, LayerWeightsDict} from './layer_builder';
 import {ModelLayer} from './model-layer';
 import * as model_builder_util from './model_builder_util';
 import {Normalization} from './tensorflow';
+import {getRandomInputProvider} from './my_input_provider';
 
 const DATASETS_CONFIG_JSON = 'model-builder-datasets-config.json';
 
@@ -530,7 +531,6 @@ export class GANPlayground extends GANPlaygroundPolymer {
       this.setupDatasetStats();
       if (this.isValid) {
         this.createModel();
-        this.startInference();
       }
       // Get prebuilt models.
       this.populateModelDropdown();
@@ -842,7 +842,6 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
     if (this.isValid) {
       this.createModel();
-      this.startInference();
     }
   }
 
@@ -923,7 +922,6 @@ export class GANPlayground extends GANPlaygroundPolymer {
         const weightsJson: string = fileReader.result;
         this.loadWeightsFromJson(weightsJson);
         this.createModel();
-        this.startInference();
       };
       fileReader.readAsText(file);
     });
