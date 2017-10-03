@@ -7,7 +7,7 @@
       "shape": [28, 28, 1]
     }, {
       "name": "labels",
-      "path": "https://storage.googleapis.com/learnjs-data/model-builder/mnist_labels_uint8",
+      "path": "http://127.0.0.1:8080/src/images/mnist_labels_uint8",
       "dataType": "uint8",
       "shape": [10]
     }],

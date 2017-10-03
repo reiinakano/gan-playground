@@ -20,7 +20,7 @@ import './ndarray-logits-visualizer';
 import './model-layer';
 
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, DataStats, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, Initializer, InMemoryDataset, MetricReduction, MomentumOptimizer, SGDOptimizer, RMSPropOptimizer, AdagradOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, OnesInitializer, Scalar, Session, Tensor, util, VarianceScalingInitializer, xhr_dataset, XhrDataset, XhrDatasetConfig, ZerosInitializer} from 'deeplearn';
+import {Array1D, Array3D, DataStats, FeedEntry, Graph, InCPUMemoryShuffledInputProviderBuilder, Initializer, InMemoryDataset, MetricReduction, MomentumOptimizer, SGDOptimizer, RMSPropOptimizer, AdagradOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, OnesInitializer, Scalar, Session, Tensor, util, VarianceScalingInitializer, xhr_dataset, XhrDataset, XhrDatasetConfig, ZerosInitializer} from 'deeplearn';
 import {NDArrayImageVisualizer} from './ndarray-image-visualizer';
 import {NDArrayLogitsVisualizer} from './ndarray-logits-visualizer';
 import {PolymerElement, PolymerHTMLElement} from './polymer-spec';
@@ -30,6 +30,7 @@ import {ModelLayer} from './model-layer';
 import * as model_builder_util from './model_builder_util';
 import {Normalization} from './tensorflow';
 import {getRandomInputProvider} from './my_input_provider';
+import {MyGraphRunner, MyGraphRunnerEventObserver} from './my_graph_runner';
 
 const DATASETS_CONFIG_JSON = 'model-builder-datasets-config.json';
 
@@ -110,7 +111,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
   private selectedNormalizationOption: number;
 
   // Datasets and models.
-  private graphRunner: GraphRunner;
+  private graphRunner: MyGraphRunner;
   private graph: Graph;
   private session: Session;
   private optimizer: Optimizer;
@@ -190,14 +191,15 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.mathCPU = new NDArrayMathCPU();
     this.math = this.mathGPU;
 
-    const eventObserver: GraphRunnerEventObserver = {
+    const eventObserver: MyGraphRunnerEventObserver = {
       batchesTrainedCallback: (batchesTrained: number) =>
           this.displayBatchesTrained(batchesTrained),
       avgCostCallback: (avgCost: Scalar) => this.displayCost(avgCost),
       metricCallback: (metric: Scalar) => this.displayAccuracy(metric),
       inferenceExamplesCallback:
-          (inputFeeds: FeedEntry[][], inferenceOutputs: NDArray[]) =>
-              this.displayInferenceExamplesOutput(inputFeeds, inferenceOutputs),
+          (inputFeeds: FeedEntry[][], inferenceOutputs: NDArray[][]) =>
+      //        this.displayInferenceExamplesOutput(inputFeeds, inferenceOutputs),
+              console.log(inputFeeds, inferenceOutputs),
       inferenceExamplesPerSecCallback: (examplesPerSec: number) =>
           this.displayInferenceExamplesPerSec(examplesPerSec),
       trainExamplesPerSecCallback: (examplesPerSec: number) =>
@@ -205,12 +207,12 @@ export class GANPlayground extends GANPlaygroundPolymer {
       totalTimeCallback: (totalTimeSec: number) => this.totalTimeSec =
           totalTimeSec.toFixed(1),
     };
-    this.graphRunner = new GraphRunner(this.math, this.session, eventObserver);
+    this.graphRunner = new MyGraphRunner(this.math, this.session, eventObserver);
     this.optimizer = new MomentumOptimizer(this.learingRate, this.momentum);
 
     // Set up datasets.
-    // this.populateDatasets();
-    this.createModel();
+    this.populateDatasets();
+    // this.createModel();
 
     this.querySelector('#dataset-dropdown .dropdown-content')
         .addEventListener(
@@ -333,32 +335,52 @@ export class GANPlayground extends GANPlaygroundPolymer {
     return [images.slice(0, end), labels.slice(0, end)];
   }
 
-  /*
+  private getDataWithoutLabels(): NDArray[] {
+    const [images, labels] = this.dataSet.getData() as [NDArray[], NDArray[]];
+    return images
+  }
+
   private startInference() {
-    const testData = this.getTestData();
-    if (testData == null) {
-      // Dataset not ready yet.
+    const data = this.getDataWithoutLabels();
+    if(data == null) {
       return;
     }
-    if (this.isValid && (testData != null)) {
-      const inferenceShuffledInputProviderGenerator =
-          new InCPUMemoryShuffledInputProviderBuilder(testData);
-      const [inferenceInputProvider, inferenceLabelProvider] =
-          inferenceShuffledInputProviderGenerator.getInputProviders();
+    if (this.isValid && (data != null)) {
+      const shuffledInputProviderGenerator = 
+          new InCPUMemoryShuffledInputProviderBuilder([data]);
+      const [inputImageProvider] =
+          shuffledInputProviderGenerator.getInputProviders();
+
+      const oneInputProvider = {
+        getNextCopy(math: NDArrayMath): NDArray {
+          return Array1D.new([0, 1]);
+        },
+        disposeCopy(math: NDArrayMath, copy: NDArray) {
+          copy.dispose();
+        }
+      }
+
+      const zeroInputProvider = {
+        getNextCopy(math: NDArrayMath): NDArray {
+          return Array1D.new([1, 0]);
+        },
+        disposeCopy(math: NDArrayMath, copy: NDArray) {
+          copy.dispose();
+        }
+      }
 
       const inferenceFeeds = [
-        {tensor: this.xTensor, data: inferenceInputProvider},
-        {tensor: this.labelTensor, data: inferenceLabelProvider}
-      ];
+        {tensor: this.xTensor, data: inputImageProvider},
+        {tensor: this.randomTensor, data: getRandomInputProvider([100])},
+        {tensor: this.oneTensor, data: oneInputProvider},
+        {tensor: this.zeroTensor, data: zeroInputProvider}
+      ]
 
       this.graphRunner.infer(
-          this.predictionTensor, inferenceFeeds, INFERENCE_EXAMPLE_INTERVAL_MS,
-          INFERENCE_EXAMPLE_COUNT);
+        this.generatedImage, this.discPredictionFake, this.discPredictionReal,
+        inferenceFeeds, INFERENCE_EXAMPLE_INTERVAL_MS, INFERENCE_EXAMPLE_COUNT
+      );
     }
-  }*/
-
-  private startInference() {
-    
   }
 
   private resetHyperParamRequirements() {
@@ -513,7 +535,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.graph = new Graph();
     const g = this.graph;
     this.randomTensor = g.placeholder('random', [100]);
-    this.xTensor = g.placeholder('input', [784]);
+    this.xTensor = g.placeholder('input', [28, 28, 1]);
     this.oneTensor = g.placeholder('one', [2]);
     this.zeroTensor = g.placeholder('zero', [2]);
 
@@ -573,6 +595,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
     // Construct second discriminator (sharing variables) for real images
     let disc2 = this.xTensor;
+    disc2 = g.reshape(disc2, [disc2.shape[0]*disc2.shape[1]*disc2.shape[2]]);
     disc2 = g.matmul(disc2, discHidden1Weight);
     disc2 = g.add(disc2, discHidden1Bias);
     disc2 = g.relu(disc2);
@@ -604,8 +627,6 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.startInference();
 
     this.modelInitialized = true;
-
-    console.log(g);
   }
 
   private populateDatasets() {
@@ -680,7 +701,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     // Setup the inference example container.
     // TODO(nsthorat): Generalize this.
     const inferenceContainer =
-        this.querySelector('#inference-container') as HTMLElement;
+        this.querySelector('#real-container') as HTMLElement;
     inferenceContainer.innerHTML = '';
     this.inputNDArrayVisualizers = [];
     this.outputNDArrayVisualizers = [];
