@@ -20,7 +20,7 @@ import './ndarray-logits-visualizer';
 import './model-layer';
 
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, DataStats, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, Initializer, InMemoryDataset, MetricReduction, MomentumOptimizer, SGDOptimizer, RMSPropOptimizer, AdagradOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, Scalar, Session, Tensor, util, VarianceScalingInitializer, xhr_dataset, XhrDataset, XhrDatasetConfig, ZerosInitializer} from 'deeplearn';
+import {Array1D, Array3D, DataStats, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, Initializer, InMemoryDataset, MetricReduction, MomentumOptimizer, SGDOptimizer, RMSPropOptimizer, AdagradOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, OnesInitializer, Scalar, Session, Tensor, util, VarianceScalingInitializer, xhr_dataset, XhrDataset, XhrDatasetConfig, ZerosInitializer} from 'deeplearn';
 import {NDArrayImageVisualizer} from './ndarray-image-visualizer';
 import {NDArrayLogitsVisualizer} from './ndarray-logits-visualizer';
 import {PolymerElement, PolymerHTMLElement} from './polymer-spec';
@@ -333,6 +333,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     return [images.slice(0, end), labels.slice(0, end)];
   }
 
+  /*
   private startInference() {
     const testData = this.getTestData();
     if (testData == null) {
@@ -354,6 +355,10 @@ export class GANPlayground extends GANPlaygroundPolymer {
           this.predictionTensor, inferenceFeeds, INFERENCE_EXAMPLE_INTERVAL_MS,
           INFERENCE_EXAMPLE_COUNT);
     }
+  }*/
+
+  private startInference() {
+    
   }
 
   private resetHyperParamRequirements() {
@@ -509,9 +514,12 @@ export class GANPlayground extends GANPlaygroundPolymer {
     const g = this.graph;
     this.randomTensor = g.placeholder('random', [100]);
     this.xTensor = g.placeholder('input', [784]);
+    this.oneTensor = g.placeholder('one', [2]);
+    this.zeroTensor = g.placeholder('zero', [2]);
 
     const varianceInitializer: Initializer = new VarianceScalingInitializer()
     const zerosInitializer: Initializer = new ZerosInitializer()
+    const onesInitializer: Initializer = new OnesInitializer();
 
     // Construct generator
     let gen = this.randomTensor;
@@ -572,11 +580,32 @@ export class GANPlayground extends GANPlaygroundPolymer {
     disc2 = g.add(disc2, discOutBias);
     disc2 = g.sigmoid(disc2);
 
-    console.log(g);
-
     this.discPredictionReal = disc2;
     this.discPredictionFake = disc1;
     this.generatedImage = gen;
+    const discLossReal = g.softmaxCrossEntropyCost(
+      this.discPredictionReal,
+      this.oneTensor
+    );
+    const discLossFake = g.softmaxCrossEntropyCost(
+      this.discPredictionFake,
+      this.zeroTensor
+    );
+    this.discLoss = g.add(discLossReal, discLossFake);
+
+    this.genLoss = g.softmaxCrossEntropyCost(
+      this.discPredictionFake,
+      this.oneTensor
+    );
+
+    this.session = new Session(g, this.math);
+    this.graphRunner.setSession(this.session);
+
+    this.startInference();
+
+    this.modelInitialized = true;
+
+    console.log(g);
   }
 
   private populateDatasets() {
