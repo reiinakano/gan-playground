@@ -20,7 +20,7 @@ import './ndarray-logits-visualizer';
 import './model-layer';
 
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, DataStats, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, InMemoryDataset, MetricReduction, MomentumOptimizer, SGDOptimizer, RMSPropOptimizer, AdagradOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, Scalar, Session, Tensor, util, xhr_dataset, XhrDataset, XhrDatasetConfig} from 'deeplearn';
+import {Array1D, Array3D, DataStats, FeedEntry, Graph, GraphRunner, GraphRunnerEventObserver, InCPUMemoryShuffledInputProviderBuilder, Initializer, InMemoryDataset, MetricReduction, MomentumOptimizer, SGDOptimizer, RMSPropOptimizer, AdagradOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, Scalar, Session, Tensor, util, VarianceScalingInitializer, xhr_dataset, XhrDataset, XhrDatasetConfig, ZerosInitializer} from 'deeplearn';
 import {NDArrayImageVisualizer} from './ndarray-image-visualizer';
 import {NDArrayLogitsVisualizer} from './ndarray-logits-visualizer';
 import {PolymerElement, PolymerHTMLElement} from './polymer-spec';
@@ -119,6 +119,11 @@ export class GANPlayground extends GANPlaygroundPolymer {
   private costTensor: Tensor;
   private accuracyTensor: Tensor;
   private predictionTensor: Tensor;
+  private discPredictionReal: Tensor;
+  private discPredictionFake: Tensor;
+  private discLoss: Tensor;
+  private genLoss: Tensor;
+  private generatedImage: Tensor;
 
   private datasetDownloaded: boolean;
   private datasetNames: string[];
@@ -205,6 +210,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
     // Set up datasets.
     // this.populateDatasets();
+    this.createModel();
 
     this.querySelector('#dataset-dropdown .dropdown-content')
         .addEventListener(
@@ -446,6 +452,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     }
   }
 
+  /*
   private createModel() {
     if (this.session != null) {
       this.session.dispose();
@@ -484,6 +491,92 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.startInference();
 
     this.modelInitialized = true;
+  }
+  */
+
+  private createModel() {
+    if (this.session != null) {
+      this.session.dispose();
+    }
+
+    this.modelInitialized = false;
+    if (this.isValid === false) {
+      return;
+    }
+
+    // Construct graph
+    this.graph = new Graph();
+    const g = this.graph;
+    this.randomTensor = g.placeholder('random', [100]);
+    this.xTensor = g.placeholder('input', [784]);
+
+    const varianceInitializer: Initializer = new VarianceScalingInitializer()
+    const zerosInitializer: Initializer = new ZerosInitializer()
+
+    // Construct generator
+    let gen = this.randomTensor;
+    const genHidden1Weight = g.variable(
+      'generator-hidden-1-weight',
+      varianceInitializer.initialize([100, 256], 100, 256)
+    );
+    gen = g.matmul(gen, genHidden1Weight);
+    const genHidden1Bias = g.variable(
+      'generator-hidden-1-bias',
+      zerosInitializer.initialize([256], 100, 256)
+    );
+    gen = g.add(gen, genHidden1Bias)
+    gen = g.relu(gen);
+    const genOutWeight = g.variable(
+      'generator-out-weight',
+      varianceInitializer.initialize([256, 784], 256, 784)
+    );
+    gen = g.matmul(gen, genOutWeight);
+    const genOutBias = g.variable(
+      'generator-out-bias',
+      zerosInitializer.initialize([784], 256, 784)
+    );
+    gen = g.add(gen, genOutBias);
+    gen = g.sigmoid(gen);
+    
+    // Construct discriminator for generated images
+    let disc1 = gen;
+    const discHidden1Weight = g.variable(
+      'discriminator-hidden-1-weight',
+      varianceInitializer.initialize([784, 256], 784, 256)
+    );
+    disc1 = g.matmul(disc1, discHidden1Weight);
+    const discHidden1Bias = g.variable(
+      'discriminator-hidden-1-bias',
+      zerosInitializer.initialize([256], 784, 256)
+    );
+    disc1 = g.add(disc1, discHidden1Bias);
+    disc1 = g.relu(disc1);
+    const discOutWeight = g.variable(
+      'discriminator-out-weight',
+      varianceInitializer.initialize([256, 2], 256, 2)
+    );
+    disc1 = g.matmul(disc1, discOutWeight);
+    const discOutBias = g.variable(
+      'discriminator-out-bias',
+      zerosInitializer.initialize([2], 256, 2)
+    );
+    disc1 = g.add(disc1, discOutBias);
+    disc1 = g.sigmoid(disc1);
+
+    // Construct second discriminator (sharing variables) for real images
+    let disc2 = this.xTensor;
+    disc2 = g.matmul(disc2, discHidden1Weight);
+    disc2 = g.add(disc2, discHidden1Bias);
+    disc2 = g.relu(disc2);
+    disc2 = g.matmul(disc2, discOutWeight);
+    disc2 = g.add(disc2, discOutBias);
+    disc2 = g.sigmoid(disc2);
+
+    console.log(g);
+
+    this.discPredictionReal = disc2;
+    this.discPredictionFake = disc1;
+    this.generatedImage = gen;
   }
 
   private populateDatasets() {
