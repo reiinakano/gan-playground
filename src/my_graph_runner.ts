@@ -1,4 +1,4 @@
-import {InputProvider, Tensor, Optimizer, CostReduction, FeedEntry, Session,
+import {Array3D, InputProvider, Tensor, Optimizer, CostReduction, FeedEntry, Session,
 NDArrayMath, NDArray, Scalar, GraphRunnerEventObserver} from 'deeplearn';
 
 const DEFAULT_EVAL_INTERVAL_MS = 1500;
@@ -255,13 +255,21 @@ export class MyGraphRunner {
         const ndarrayFeedEntries: FeedEntry[] = [];
         for (let j = 0; j < this.inferenceFeedEntries.length; j++) {
           const feedEntry = this.inferenceFeedEntries[j];
-          ndarrayFeedEntries.push({
-            tensor: feedEntry.tensor,
-            data:
-                track((feedEntry.data as InputProvider).getNextCopy(this.math))
-          });
+          const nextData = track((feedEntry.data as InputProvider).getNextCopy(this.math));
+          const moreData = track((feedEntry.data as InputProvider).getNextCopy(this.math));
+
+          console.log(nextData);
+          console.log(moreData);
+          console.log(track((feedEntry.data as InputProvider).getNextCopy(this.math)));
+
+          //const toPush = {
+          //  tensor: feedEntry.tensor,
+          //  data: moreData
+          //};
+          //ndarrayFeedEntries.push(toPush);
         }
         feeds.push(ndarrayFeedEntries);
+        console.log(ndarrayFeedEntries);
 
         const evaluatedTensors = this.session.evalAll(
           [this.genImageTensor, this.discPredictionFakeTensor, this.discPredictionRealTensor],
@@ -284,6 +292,8 @@ export class MyGraphRunner {
             (this.inferenceExampleCount * 1000 / inferenceExamplesPerSecTime);
         this.eventObserver.inferenceExamplesPerSecCallback(examplesPerSec);
       }
+
+      console.log(feeds[0][0].data as Array3D);
 
       if (this.eventObserver.inferenceExamplesCallback != null) {
         this.eventObserver.inferenceExamplesCallback(

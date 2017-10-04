@@ -198,8 +198,8 @@ export class GANPlayground extends GANPlaygroundPolymer {
       metricCallback: (metric: Scalar) => this.displayAccuracy(metric),
       inferenceExamplesCallback:
           (inputFeeds: FeedEntry[][], inferenceOutputs: NDArray[][]) =>
-      //        this.displayInferenceExamplesOutput(inputFeeds, inferenceOutputs),
-              console.log(inputFeeds, inferenceOutputs),
+              this.displayInferenceExamplesOutput(inputFeeds, inferenceOutputs),
+      //        console.log(inputFeeds, inferenceOutputs),
       inferenceExamplesPerSecCallback: (examplesPerSec: number) =>
           this.displayInferenceExamplesPerSec(examplesPerSec),
       trainExamplesPerSecCallback: (examplesPerSec: number) =>
@@ -335,20 +335,19 @@ export class GANPlayground extends GANPlaygroundPolymer {
     return [images.slice(0, end), labels.slice(0, end)];
   }
 
-  private getDataWithoutLabels(): NDArray[] {
-    const [images, labels] = this.dataSet.getData() as [NDArray[], NDArray[]];
-    return images
+  private getData(): NDArray[][] {
+    return this.dataSet.getData() as [NDArray[], NDArray[]];
   }
 
   private startInference() {
-    const data = this.getDataWithoutLabels();
+    const data = this.getData();
     if(data == null) {
       return;
     }
     if (this.isValid && (data != null)) {
       const shuffledInputProviderGenerator = 
-          new InCPUMemoryShuffledInputProviderBuilder([data]);
-      const [inputImageProvider] =
+          new InCPUMemoryShuffledInputProviderBuilder(data);
+      const [inputImageProvider, _] =
           shuffledInputProviderGenerator.getInputProviders();
 
       const oneInputProvider = {
@@ -903,34 +902,36 @@ export class GANPlayground extends GANPlaygroundPolymer {
   }
 
   displayInferenceExamplesOutput(
-      inputFeeds: FeedEntry[][], inferenceOutputs: NDArray[]) {
-    let images: Array3D[] = [];
-    const logits: Array1D[] = [];
-    const labels: Array1D[] = [];
+      inputFeeds: FeedEntry[][], inferenceOutputs: NDArray[][]) {
+
+    let realImages: Array3D[] = [];
+    const realLabels: Array1D[] = [];
+    const realLogits: Array1D[] = [];
+
     for (let i = 0; i < inputFeeds.length; i++) {
-      images.push(inputFeeds[i][IMAGE_DATA_INDEX].data as Array3D);
-      labels.push(inputFeeds[i][LABEL_DATA_INDEX].data as Array1D);
-      logits.push(inferenceOutputs[i] as Array1D);
+      realImages.push(inputFeeds[i][0].data as Array3D);
+      realLabels.push(inputFeeds[i][2].data as Array1D);
+      realLogits.push(inferenceOutputs[2][i] as Array1D);
     }
 
-    images =
-        this.dataSet.unnormalizeExamples(images, IMAGE_DATA_INDEX) as Array3D[];
+    realImages =
+        this.dataSet.unnormalizeExamples(realImages, IMAGE_DATA_INDEX) as Array3D[];
 
     // Draw the images.
     for (let i = 0; i < inputFeeds.length; i++) {
-      this.inputNDArrayVisualizers[i].saveImageDataFromNDArray(images[i]);
+      this.inputNDArrayVisualizers[i].saveImageDataFromNDArray(realImages[i]);
     }
 
     // Draw the logits.
     for (let i = 0; i < inputFeeds.length; i++) {
-      const softmaxLogits = this.math.softmax(logits[i]);
+      const realSoftmaxLogits = this.math.softmax(realLogits[i]);
 
       this.outputNDArrayVisualizers[i].drawLogits(
-          softmaxLogits, labels[i],
+          realSoftmaxLogits, realLabels[i],
           this.xhrDatasetConfigs[this.selectedDatasetName].labelClassNames);
       this.inputNDArrayVisualizers[i].draw();
 
-      softmaxLogits.dispose();
+      realSoftmaxLogits.dispose();
     }
   }
 
