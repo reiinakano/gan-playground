@@ -443,7 +443,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
   }
 
   private createDiscOptimizer() {
-    return new AdagradOptimizer(+this.learningRate, +this.momentum, 
+    return new SGDOptimizer(+this.learningRate, 
       this.graph.getNodes().filter((x) => x.name.startsWith('discriminator')));
   }
 
@@ -596,7 +596,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     );
     gen = g.add(gen, genOutBias);
     gen = g.reshape(gen, this.xTensor.shape);
-    gen = g.sigmoid(gen);
+    gen = g.tanh(gen);
     
     // Construct discriminator for generated images
     let disc1 = gen;
