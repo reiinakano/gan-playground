@@ -251,12 +251,12 @@ export class GANPlayground extends GANPlaygroundPolymer {
           // Activate, deactivate hyper parameter inputs.
           this.refreshHyperParamRequirements(event.detail.selected);
         });
-    this.learningRate = 0.1;
+    this.learningRate = 0.02;
     this.momentum = 0.1;
     this.needMomentum = true;
     this.gamma = 0.1;
     this.needGamma = false;
-    this.batchSize = 64;
+    this.batchSize = 128;
     // Default optimizer is momentum
     this.selectedOptimizerName = "momentum";
     this.optimizerNames = ["sgd", "momentum", "rmsprop", "adagrad"];
@@ -442,42 +442,66 @@ export class GANPlayground extends GANPlaygroundPolymer {
     }
   }
 
+  private createDiscOptimizer() {
+    return new AdagradOptimizer(+this.learningRate, +this.momentum, 
+      this.graph.getNodes().filter((x) => x.name.startsWith('discriminator')));
+  }
+
+  private createGenOptimizer() {
+    return new AdagradOptimizer(+this.learningRate, +this.momentum,
+      this.graph.getNodes().filter((x) => x.name.startsWith('generator')));
+  }
+
   private startTraining() {
-    const trainingData = this.getTrainingData();
-    const testData = this.getTestData();
+    const data = this.getImageDataOnly();
 
     // Recreate optimizer with the selected optimizer and hyperparameters.
-    this.optimizer = this.createOptimizer();
+    this.discOptimizer = this.createDiscOptimizer();
+    this.genOptimizer = this.createGenOptimizer();
 
-    if (this.isValid && (trainingData != null) && (testData != null)) {
+    if (this.isValid && data != null) {
       this.recreateCharts();
       this.graphRunner.resetStatistics();
 
-      const trainingShuffledInputProviderGenerator =
-          new InCPUMemoryShuffledInputProviderBuilder(trainingData);
-      const [trainInputProvider, trainLabelProvider] =
-          trainingShuffledInputProviderGenerator.getInputProviders();
+      const shuffledInputProviderGenerator =
+          new InCPUMemoryShuffledInputProviderBuilder([data]);
+      const [inputImageProvider] =
+          shuffledInputProviderGenerator.getInputProviders();
 
-      const trainFeeds = [
-        {tensor: this.xTensor, data: trainInputProvider},
-        {tensor: this.labelTensor, data: trainLabelProvider}
-      ];
+      const oneInputProvider = {
+        getNextCopy(math: NDArrayMath): NDArray {
+          return Array1D.new([0, 1]);
+        },
+        disposeCopy(math: NDArrayMath, copy: NDArray) {
+          copy.dispose();
+        }
+      }
 
-      const accuracyShuffledInputProviderGenerator =
-          new InCPUMemoryShuffledInputProviderBuilder(testData);
-      const [accuracyInputProvider, accuracyLabelProvider] =
-          accuracyShuffledInputProviderGenerator.getInputProviders();
+      const zeroInputProvider = {
+        getNextCopy(math: NDArrayMath): NDArray {
+          return Array1D.new([1, 0]);
+        },
+        disposeCopy(math: NDArrayMath, copy: NDArray) {
+          copy.dispose();
+        }
+      }
 
-      const accuracyFeeds = [
-        {tensor: this.xTensor, data: accuracyInputProvider},
-        {tensor: this.labelTensor, data: accuracyLabelProvider}
-      ];
+      const discFeeds = [
+        {tensor: this.xTensor, data: inputImageProvider},
+        {tensor: this.randomTensor, data: getRandomInputProvider([100])},
+        {tensor: this.oneTensor, data: oneInputProvider},
+        {tensor: this.zeroTensor, data: zeroInputProvider}
+      ]
+
+      const genFeeds = [
+        {tensor: this.randomTensor, data: getRandomInputProvider([100])},
+        {tensor: this.oneTensor, data: oneInputProvider},
+        {tensor: this.zeroTensor, data: zeroInputProvider}
+      ]
 
       this.graphRunner.train(
-          this.costTensor, trainFeeds, this.batchSize, this.optimizer,
-          undefined /** numBatches */, this.accuracyTensor, accuracyFeeds,
-          this.batchSize, MetricReduction.MEAN, EVAL_INTERVAL_MS,
-          COST_INTERVAL_MS);
+        this.discLoss, this.genLoss, discFeeds, genFeeds, this.batchSize,
+        this.discOptimizer, this.genOptimizer, undefined, COST_INTERVAL_MS);
 
       this.showTrainStats = true;
       this.applicationState = ApplicationState.TRAINING;
@@ -854,14 +878,14 @@ export class GANPlayground extends GANPlaygroundPolymer {
       this.costChart.destroy();
     }
     this.costChart =
-        this.createChart('cost-chart', 'Cost', this.costChartData, 0);
+        this.createChart('cost-chart', 'Discriminator Cost', this.costChartData, 0);
 
     if (this.accuracyChart != null) {
       this.accuracyChart.destroy();
     }
     this.accuracyChartData = [];
     this.accuracyChart = this.createChart(
-        'accuracy-chart', 'Accuracy', this.accuracyChartData, 0, 100);
+        'accuracy-chart', 'Generator Cost', this.accuracyChartData, 0);
 
     if (this.examplesPerSecChart != null) {
       this.examplesPerSecChart.destroy();
@@ -911,10 +935,18 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.examplesTrained = this.batchSize * totalBatchesTrained;
   }
 
-  displayCost(avgCost: Scalar, which: String) {
-    this.costChartData.push(
-        {x: this.graphRunner.getTotalBatchesTrained(), y: avgCost.get()});
-    this.costChart.update();
+  displayCost(cost: Scalar, which: String) {
+    if (which === 'disc') {
+      this.costChartData.push(
+          {x: this.graphRunner.getTotalBatchesTrained(), y: cost.get()});
+      this.costChart.update();
+    }
+
+    else {
+      this.accuracyChartData.push(
+          {x: this.graphRunner.getTotalBatchesTrained(), y: cost.get()});
+      this.accuracyChart.update();
+    }
   }
 
   displayAccuracy(accuracy: Scalar) {
