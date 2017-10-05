@@ -256,7 +256,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.needMomentum = true;
     this.gamma = 0.1;
     this.needGamma = false;
-    this.batchSize = 128;
+    this.batchSize = 15;
     // Default optimizer is momentum
     this.selectedOptimizerName = "momentum";
     this.optimizerNames = ["sgd", "momentum", "rmsprop", "adagrad"];
@@ -443,7 +443,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
   }
 
   private createDiscOptimizer() {
-    return new SGDOptimizer(+this.learningRate, 
+    return new RMSPropOptimizer(+this.learningRate, +this.gamma,
       this.graph.getNodes().filter((x) => x.name.startsWith('discriminator')));
   }
 
