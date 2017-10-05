@@ -993,7 +993,6 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
       realSoftmaxLogits.dispose();
       fakeSoftmaxLogits.dispose();
-      fakeImages[i].dispose();
     }
   }
 
