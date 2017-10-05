@@ -275,7 +275,7 @@ export class MyGraphRunner {
           ndarrayFeedEntriesCopy
         );
 
-        genImageValues.push(evaluatedTensors[0]);
+        genImageValues.push(track(NDArray.like(evaluatedTensors[0])));
         discPredictionFakeValues.push(evaluatedTensors[1]);
         discPredictionRealValues.push(evaluatedTensors[2]);
       }
@@ -291,8 +291,6 @@ export class MyGraphRunner {
             (this.inferenceExampleCount * 1000 / inferenceExamplesPerSecTime);
         this.eventObserver.inferenceExamplesPerSecCallback(examplesPerSec);
       }
-
-      console.log(feeds[0][0].data as Array3D);
 
       if (this.eventObserver.inferenceExamplesCallback != null) {
         this.eventObserver.inferenceExamplesCallback(

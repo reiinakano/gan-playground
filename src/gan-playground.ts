@@ -570,10 +570,12 @@ export class GANPlayground extends GANPlaygroundPolymer {
       zerosInitializer.initialize([784], 256, 784)
     );
     gen = g.add(gen, genOutBias);
+    gen = g.reshape(gen, this.xTensor.shape);
     gen = g.sigmoid(gen);
     
     // Construct discriminator for generated images
     let disc1 = gen;
+    disc1 = g.reshape(disc1, [disc1.shape[0]*disc1.shape[1]*disc1.shape[2]]);
     const discHidden1Weight = g.variable(
       'discriminator-hidden-1-weight',
       varianceInitializer.initialize([784, 256], 784, 256)
@@ -702,8 +704,12 @@ export class GANPlayground extends GANPlaygroundPolymer {
     const outputLayer = this.querySelector('#output-layer') as ModelLayer;
     outputLayer.inputShapeDisplay = labelShapeDisplay;
 
-    // Setup the inference example container.
-    // TODO(nsthorat): Generalize this.
+    this.buildRealImageContainer();
+    this.buildFakeImageContainer();
+  }
+
+  /* Helper function for building out container for images*/
+  private buildRealImageContainer() {
     const inferenceContainer =
         this.querySelector('#real-container') as HTMLElement;
     inferenceContainer.innerHTML = '';
@@ -730,6 +736,39 @@ export class GANPlayground extends GANPlaygroundPolymer {
       ndarrayLogitsVisualizer.initialize(
           INFERENCE_IMAGE_SIZE_PX, INFERENCE_IMAGE_SIZE_PX);
       this.outputNDArrayVisualizers.push(ndarrayLogitsVisualizer);
+      inferenceExampleElement.appendChild(ndarrayLogitsVisualizer);
+
+      inferenceContainer.appendChild(inferenceExampleElement);
+    }
+  }
+
+  private buildFakeImageContainer() {
+    const inferenceContainer =
+        this.querySelector('#generated-container') as HTMLElement;
+    inferenceContainer.innerHTML = '';
+    this.fakeInputNDArrayVisualizers = [];
+    this.fakeOutputNDArrayVisualizers = [];
+    for (let i = 0; i < INFERENCE_EXAMPLE_COUNT; i++) {
+      const inferenceExampleElement = document.createElement('div');
+      inferenceExampleElement.className = 'inference-example';
+
+      // Set up the input visualizer.
+      const ndarrayImageVisualizer =
+          document.createElement('ndarray-image-visualizer') as
+          NDArrayImageVisualizer;
+      ndarrayImageVisualizer.setShape(this.inputShape);
+      ndarrayImageVisualizer.setSize(
+          INFERENCE_IMAGE_SIZE_PX, INFERENCE_IMAGE_SIZE_PX);
+      this.fakeInputNDArrayVisualizers.push(ndarrayImageVisualizer);
+      inferenceExampleElement.appendChild(ndarrayImageVisualizer);
+
+      // Set up the output ndarray visualizer.
+      const ndarrayLogitsVisualizer =
+          document.createElement('ndarray-logits-visualizer') as
+          NDArrayLogitsVisualizer;
+      ndarrayLogitsVisualizer.initialize(
+          INFERENCE_IMAGE_SIZE_PX, INFERENCE_IMAGE_SIZE_PX);
+      this.fakeOutputNDArrayVisualizers.push(ndarrayLogitsVisualizer);
       inferenceExampleElement.appendChild(ndarrayLogitsVisualizer);
 
       inferenceContainer.appendChild(inferenceExampleElement);
@@ -913,30 +952,48 @@ export class GANPlayground extends GANPlaygroundPolymer {
     const realLabels: Array1D[] = [];
     const realLogits: Array1D[] = [];
 
+    let fakeImages: Array3D[] = []
+    const fakeLabels: Array1D[] = [];
+    const fakeLogits: Array1D[] = [];
+
     for (let i = 0; i < inputFeeds.length; i++) {
       realImages.push(inputFeeds[i][0].data as Array3D);
       realLabels.push(inputFeeds[i][2].data as Array1D);
       realLogits.push(inferenceOutputs[2][i] as Array1D);
+      fakeImages.push((inferenceOutputs[0][i] as Array3D));
+      fakeLabels.push(inputFeeds[i][3].data as Array1D);
+      fakeLogits.push(inferenceOutputs[1][i] as Array1D);
     }
 
     realImages =
         this.dataSet.unnormalizeExamples(realImages, IMAGE_DATA_INDEX) as Array3D[];
 
+    fakeImages = 
+        this.dataSet.unnormalizeExamples(fakeImages, IMAGE_DATA_INDEX) as Array3D[];
+
     // Draw the images.
     for (let i = 0; i < inputFeeds.length; i++) {
       this.inputNDArrayVisualizers[i].saveImageDataFromNDArray(realImages[i]);
+      this.fakeInputNDArrayVisualizers[i].saveImageDataFromNDArray(fakeImages[i]);
     }
 
     // Draw the logits.
     for (let i = 0; i < inputFeeds.length; i++) {
       const realSoftmaxLogits = this.math.softmax(realLogits[i]);
+      const fakeSoftmaxLogits = this.math.softmax(fakeLogits[i]);
 
       this.outputNDArrayVisualizers[i].drawLogits(
           realSoftmaxLogits, realLabels[i],
           this.xhrDatasetConfigs[this.selectedDatasetName].labelClassNames);
+      this.fakeOutputNDArrayVisualizers[i].drawLogits(
+          fakeSoftmaxLogits, fakeLabels[i],
+          this.xhrDatasetConfigs[this.selectedDatasetName].labelClassNames);
       this.inputNDArrayVisualizers[i].draw();
+      this.fakeInputNDArrayVisualizers[i].draw();
 
       realSoftmaxLogits.dispose();
+      fakeSoftmaxLogits.dispose();
+      fakeImages[i].dispose();
     }
   }
 
