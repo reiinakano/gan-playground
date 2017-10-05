@@ -8,7 +8,8 @@ const DEFAULT_INFERENCE_EXAMPLE_INTERVAL_MS = 3000;
 
 export interface MyGraphRunnerEventObserver {
   batchesTrainedCallback?: (totalBatchesTrained: number) => void;
-  avgCostCallback?: (avgCost: Scalar) => void;
+  discCostCallback?: (cost: Scalar) => void;
+  genCostCallback?: (cost: Scalar) => void;
   metricCallback?: (metric: NDArray) => void;
   inferenceExamplesCallback?:
       (feeds: FeedEntry[][], inferenceValues: NDArray[][]) => void;
@@ -29,18 +30,15 @@ export enum MetricReduction {
  * and speed of training.
  */
 export class MyGraphRunner {
-  private costTensor: Tensor;
-  private trainFeedEntries: FeedEntry[];
+  private discCostTensor: Tensor;
+  private genCostTensor: Tensor;
+  private discTrainFeedEntries: FeedEntry[];
+  private genTrainFeedEntries: FeedEntry[];
   private batchSize: number;
-  private optimizer: Optimizer;
+  private genOptimizer: Optimizer;
+  private discOptimizer: Optimizer;
   private currentTrainLoopNumBatches: number|undefined;
   private costIntervalMs: number;
-
-  private metricTensor: Tensor|undefined;
-  private metricFeedEntries: FeedEntry[]|undefined;
-  private metricBatchSize: number|undefined;
-  private metricReduction: MetricReduction;
-  private metricIntervalMs: number;
 
   private genImageTensor: Tensor;
   private discPredictionFakeTensor: Tensor;
@@ -89,28 +87,18 @@ export class MyGraphRunner {
    * This can be used for computing accuracy, or a similar metric.
    */
   train(
-      costTensor: Tensor, trainFeedEntries: FeedEntry[], batchSize: number,
-      optimizer: Optimizer, numBatches?: number, metricTensor?: Tensor,
-      metricFeedEntries?: FeedEntry[], metricBatchSize?: number,
-      metricReduction = MetricReduction.MEAN,
-      evalIntervalMs = DEFAULT_EVAL_INTERVAL_MS,
+      discCostTensor: Tensor, genCostTensor: Tensor, discTrainFeedEntries: FeedEntry[], 
+      genTrainFeedEntries: FeedEntry[], batchSize: number, discOptimizer: Optimizer, 
+      genOptimizer: Optimizer, numBatches?: number, 
       costIntervalMs = DEFAULT_COST_INTERVAL_MS) {
-    this.costTensor = costTensor;
-    this.trainFeedEntries = trainFeedEntries;
-    this.metricTensor = metricTensor;
-    this.metricFeedEntries = metricFeedEntries;
-    if (metricBatchSize != null && this.metricBatchSize !== metricBatchSize) {
-      if (this.metricBatchSizeScalar != null) {
-        this.metricBatchSizeScalar.dispose();
-      }
-      this.metricBatchSizeScalar = Scalar.new(metricBatchSize);
-    }
-    this.metricBatchSize = metricBatchSize;
-    this.metricReduction = metricReduction;
+    this.discCostTensor = discCostTensor;
+    this.genCostTensor = genCostTensor;
+    this.discTrainFeedEntries = discTrainFeedEntries;
+    this.genTrainFeedEntries = genTrainFeedEntries;
     this.batchSize = batchSize;
-    this.optimizer = optimizer;
+    this.discOptimizer = discOptimizer;
+    this.genOptimizer = genOptimizer;
 
-    this.metricIntervalMs = evalIntervalMs;
     this.costIntervalMs = costIntervalMs;
     this.currentTrainLoopNumBatches = numBatches;
 
@@ -146,7 +134,8 @@ export class MyGraphRunner {
     }
 
     const start = performance.now();
-    const shouldComputeCost = this.eventObserver.avgCostCallback != null &&
+    const shouldComputeCost = (this.eventObserver.discCostCallback != null || 
+      this.eventObserver.genCostCallback != null) &&
         (start - this.lastCostTimestamp > this.costIntervalMs);
     if (shouldComputeCost) {
       this.lastCostTimestamp = start;
@@ -155,32 +144,25 @@ export class MyGraphRunner {
     const costReduction =
         shouldComputeCost ? CostReduction.MEAN : CostReduction.NONE;
 
-    this.math.scope((keep) => {
-      const avgCost = this.session.train(
-          this.costTensor, this.trainFeedEntries, this.batchSize,
-          this.optimizer, costReduction);
+    this.math.scope((keep, track) => {
+      const discCost = this.session.train(
+          this.discCostTensor, this.discTrainFeedEntries, this.batchSize,
+          this.discOptimizer, costReduction);
+
+      const genCost = this.session.train(
+        this.genCostTensor, this.genTrainFeedEntries, this.batchSize,
+        this.genOptimizer, costReduction);
 
       if (shouldComputeCost) {
         const trainTime = performance.now() - start;
 
-        this.eventObserver.avgCostCallback(avgCost);
+        this.eventObserver.discCostCallback(discCost);
+        this.eventObserver.genCostCallback(genCost);
 
         if (this.eventObserver.trainExamplesPerSecCallback != null) {
           const examplesPerSec = (this.batchSize * 1000 / trainTime);
           this.eventObserver.trainExamplesPerSecCallback(examplesPerSec);
         }
-      }
-
-      if (this.eventObserver.metricCallback != null &&
-          this.metricFeedEntries != null &&
-          start - this.lastEvalTimestamp > this.metricIntervalMs) {
-        this.lastEvalTimestamp = start;
-
-        if (this.lastComputedMetric != null) {
-          this.lastComputedMetric.dispose();
-        }
-        this.lastComputedMetric = this.computeMetric();
-        this.eventObserver.metricCallback(this.lastComputedMetric);
       }
 
       if (this.eventObserver.totalTimeCallback != null) {
@@ -312,29 +294,6 @@ export class MyGraphRunner {
 
   isInferenceRunning(): boolean {
     return this.isInferring;
-  }
-
-  computeMetric(): Scalar {
-    if (this.metricFeedEntries == null) {
-      throw new Error('Cannot compute metric, no metric FeedEntries provided.');
-    }
-
-    let metric = this.zeroScalar;
-
-    return this.math.scope((keep) => {
-      for (let i = 0; i < this.metricBatchSize; i++) {
-        const metricValue =
-            this.session.eval(this.metricTensor, this.metricFeedEntries);
-
-        metric = this.math.add(metric, metricValue);
-      }
-
-      if (this.metricReduction === MetricReduction.MEAN) {
-        metric = this.math.divide(metric, this.metricBatchSizeScalar);
-      }
-
-      return metric;
-    });
   }
 
   getTotalBatchesTrained(): number {

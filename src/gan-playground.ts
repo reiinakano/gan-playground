@@ -194,7 +194,8 @@ export class GANPlayground extends GANPlaygroundPolymer {
     const eventObserver: MyGraphRunnerEventObserver = {
       batchesTrainedCallback: (batchesTrained: number) =>
           this.displayBatchesTrained(batchesTrained),
-      avgCostCallback: (avgCost: Scalar) => this.displayCost(avgCost),
+      discCostCallback: (cost: Scalar) => this.displayCost(cost, 'disc'),
+      genCostCallback: (cost: Scalar) => this.displayCost(cost, 'gen'),
       metricCallback: (metric: Scalar) => this.displayAccuracy(metric),
       inferenceExamplesCallback:
           (inputFeeds: FeedEntry[][], inferenceOutputs: NDArray[][]) =>
@@ -910,7 +911,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.examplesTrained = this.batchSize * totalBatchesTrained;
   }
 
-  displayCost(avgCost: Scalar) {
+  displayCost(avgCost: Scalar, which: String) {
     this.costChartData.push(
         {x: this.graphRunner.getTotalBatchesTrained(), y: avgCost.get()});
     this.costChart.update();
