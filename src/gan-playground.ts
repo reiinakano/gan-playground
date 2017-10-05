@@ -448,7 +448,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
   }
 
   private createGenOptimizer() {
-    return new AdagradOptimizer(+this.learningRate, +this.momentum,
+    return new RMSPropOptimizer(+this.learningRate, +this.gamma,
       this.graph.getNodes().filter((x) => x.name.startsWith('generator')));
   }
 
