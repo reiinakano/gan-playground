@@ -253,27 +253,26 @@ export class MyGraphRunner {
       for (let i = 0; i < this.inferenceExampleCount; i++) {
         // Populate a new FeedEntry[] populated with NDArrays.
         const ndarrayFeedEntries: FeedEntry[] = [];
+        const ndarrayFeedEntriesCopy: FeedEntry[] = [];
+
         for (let j = 0; j < this.inferenceFeedEntries.length; j++) {
           const feedEntry = this.inferenceFeedEntries[j];
           const nextData = track((feedEntry.data as InputProvider).getNextCopy(this.math));
-          const moreData = track((feedEntry.data as InputProvider).getNextCopy(this.math));
-
-          console.log(nextData);
-          console.log(moreData);
-          console.log(track((feedEntry.data as InputProvider).getNextCopy(this.math)));
-
-          //const toPush = {
-          //  tensor: feedEntry.tensor,
-          //  data: moreData
-          //};
-          //ndarrayFeedEntries.push(toPush);
+          const dataCopy = track((NDArray.like(nextData)));
+          ndarrayFeedEntries.push({
+            tensor: feedEntry.tensor,
+            data: nextData
+          });
+          ndarrayFeedEntriesCopy.push({
+            tensor: feedEntry.tensor,
+            data: dataCopy
+          });
         }
         feeds.push(ndarrayFeedEntries);
-        console.log(ndarrayFeedEntries);
 
         const evaluatedTensors = this.session.evalAll(
           [this.genImageTensor, this.discPredictionFakeTensor, this.discPredictionRealTensor],
-          ndarrayFeedEntries
+          ndarrayFeedEntriesCopy
         );
 
         genImageValues.push(evaluatedTensors[0]);

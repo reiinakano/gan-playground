@@ -19,7 +19,7 @@ import {Array1D, NDArrayMathCPU} from 'deeplearn';
 
 import {PolymerElement, PolymerHTMLElement} from './polymer-spec';
 
-const TOP_K = 3;
+const TOP_K = 2;
 
 // tslint:disable-next-line
 export let NDArrayLogitsVisualizerPolymer: new () => PolymerHTMLElement =

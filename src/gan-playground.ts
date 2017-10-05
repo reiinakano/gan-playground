@@ -339,15 +339,20 @@ export class GANPlayground extends GANPlaygroundPolymer {
     return this.dataSet.getData() as [NDArray[], NDArray[]];
   }
 
+  private getImageDataOnly(): NDArray[] {
+    const [images, labels] = this.dataSet.getData() as [NDArray[], NDArray[]];
+    return images
+  }
+
   private startInference() {
-    const data = this.getData();
+    const data = this.getImageDataOnly();
     if(data == null) {
       return;
     }
     if (this.isValid && (data != null)) {
       const shuffledInputProviderGenerator = 
-          new InCPUMemoryShuffledInputProviderBuilder(data);
-      const [inputImageProvider, _] =
+          new InCPUMemoryShuffledInputProviderBuilder([data]);
+      const [inputImageProvider] =
           shuffledInputProviderGenerator.getInputProviders();
 
       const oneInputProvider = {
