@@ -434,7 +434,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
         return new RMSPropOptimizer(+this.learningRate, +this.gamma);
       }
       case 'adagrad': {
-        return new AdagradOptimizer(+this.learningRate, +this.momentum);
+        return new AdagradOptimizer(+this.learningRate, +this.gamma);
       }
       default: {
         throw new Error(`Unknown optimizer "${this.selectedOptimizerName}"`);
