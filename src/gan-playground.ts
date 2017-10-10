@@ -443,12 +443,12 @@ export class GANPlayground extends GANPlaygroundPolymer {
   }
 
   private createDiscOptimizer() {
-    return new RMSPropOptimizer(+this.learningRate, +this.gamma,
+    return new RMSPropOptimizer(0.02, +this.gamma,
       this.graph.getNodes().filter((x) => x.name.startsWith('discriminator')));
   }
 
   private createGenOptimizer() {
-    return new RMSPropOptimizer(+this.learningRate, +this.gamma,
+    return new RMSPropOptimizer(0.002, +this.gamma,
       this.graph.getNodes().filter((x) => x.name.startsWith('generator')));
   }
 

@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prep": "npm install && bower install",
+    "build": "tsc"
   },
   "author": "",
   "license": "MIT",
@@ -14,7 +15,7 @@
     "bower": "~1.8.0",
     "browserify": "~14.4.0",
     "cross-spawn": "~5.1.0",
-    "deeplearn": "~0.2.3",
+    "deeplearn": "~0.3.0",
     "http-server": "~0.10.0",
     "jasmine-core": "~2.6.4",
     "polymer-bundler": "~3.0.1",
