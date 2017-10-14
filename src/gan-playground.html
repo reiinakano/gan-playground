@@ -244,10 +244,10 @@ paper-progress {
       <paper-input no-animations label="Learning Rate - discriminator" id="disc-learning-rate-input" disabled="[[!datasetDownloaded]]" value={{discLearningRate}}>
       </paper-input>
 
-      <paper-input no-animations label="Momentum - discriminator" id="disc-momentum" disabled="[[!discNeedMomentum]]" value={{discMomentum}}>
+      <paper-input no-animations label="Momentum - discriminator" id="disc-momentum" hidden="[[!discNeedMomentum]]" value={{discMomentum}}>
       </paper-input>
 
-      <paper-input no-animations label="Gamma - discriminator" id="disc-gamma" disabled="[[!discNeedGamma]]" value={{discGamma}}>
+      <paper-input no-animations label="Gamma - discriminator" id="disc-gamma" hidden="[[!discNeedGamma]]" value={{discGamma}}>
       </paper-input>
 
       <paper-dropdown-menu no-animations label="Optimizer - discriminator" id="disc-optimizer-dropdown" disabled="[[!datasetDownloaded]]">
@@ -263,10 +263,10 @@ paper-progress {
       <paper-input no-animations label="Learning Rate - generator" id="gen-learning-rate-input" disabled="[[!datasetDownloaded]]" value={{genLearningRate}}>
       </paper-input>
 
-      <paper-input no-animations label="Momentum - generator" id="gen-momentum" disabled="[[!genNeedMomentum]]" value={{genMomentum}}>
+      <paper-input no-animations label="Momentum - generator" id="gen-momentum" hidden="[[!genNeedMomentum]]" value={{genMomentum}}>
       </paper-input>
 
-      <paper-input no-animations label="Gamma - generator" id="gen-gamma" disabled="[[!genNeedGamma]]" value={{genGamma}}>
+      <paper-input no-animations label="Gamma - generator" id="gen-gamma" hidden="[[!genNeedGamma]]" value={{genGamma}}>
       </paper-input>
 
       <paper-dropdown-menu no-animations label="Optimizer - generator" id="gen-optimizer-dropdown" disabled="[[!datasetDownloaded]]">
