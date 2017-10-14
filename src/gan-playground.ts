@@ -75,13 +75,19 @@ export let GANPlaygroundPolymer: new () => PolymerHTMLElement = PolymerElement({
     datasetNames: Array,
     selectedDatasetName: String,
     modelNames: Array,
-    selectedOptimizerName: String,
+    discSelectedOptimizerName: String,
+    genSelectedOptimizerName: String,
     optimizerNames: Array,
-    learningRate: Number,
-    momentum: Number,
-    needMomentum: Boolean,
-    gamma: Number,
-    needGamma: Boolean,
+    discLearningRate: Number,
+    genLearningRate: Number,
+    discMomentum: Number,
+    genMomentum: Number,
+    discNeedMomentum: Boolean,
+    genNeedMomentum: Boolean,
+    discGamma: Number,
+    genGamma: Number,
+    discNeedGamma: Boolean,
+    genNeedGamma: Boolean,
     batchSize: Number,
     selectedModelName: String,
     selectedNormalizationOption:
@@ -114,7 +120,8 @@ export class GANPlayground extends GANPlaygroundPolymer {
   private graphRunner: MyGraphRunner;
   private graph: Graph;
   private session: Session;
-  private optimizer: Optimizer;
+  private discOptimizer: Optimizer;
+  private genOptimizer: Optimizer;
   private xTensor: Tensor;
   private labelTensor: Tensor;
   private costTensor: Tensor;
@@ -132,17 +139,23 @@ export class GANPlayground extends GANPlaygroundPolymer {
   private modelNames: string[];
   private selectedModelName: string;
   private optimizerNames: string[];
-  private selectedOptimizerName: string;
+  private discSelectedOptimizerName: string;
+  private genSelectedOptimizerName: string;
   private loadedWeights: LayerWeightsDict[]|null;
   private dataSets: {[datasetName: string]: InMemoryDataset};
   private dataSet: InMemoryDataset;
   private xhrDatasetConfigs: {[datasetName: string]: XhrDatasetConfig};
   private datasetStats: DataStats[];
-  private learingRate: number;
-  private momentum: number;
-  private needMomentum: boolean;
-  private gamma: number;
-  private needGamma: boolean;
+  private discLearningRate: number;
+  private genLearningRate: number;
+  private discMomentum: number;
+  private genMomentum: number;
+  private discNeedMomentum: boolean;
+  private genNeedMomentum: boolean;
+  private discGamma: number;
+  private genGamma: number;
+  private discNeedGamma: boolean;
+  private genNeedGamma: boolean;
   private batchSize: number;
 
   // Stats.
@@ -209,7 +222,6 @@ export class GANPlayground extends GANPlaygroundPolymer {
           totalTimeSec.toFixed(1),
     };
     this.graphRunner = new MyGraphRunner(this.math, this.session, eventObserver);
-    this.optimizer = new MomentumOptimizer(this.learingRate, this.momentum);
 
     // Set up datasets.
     this.populateDatasets();
@@ -245,20 +257,36 @@ export class GANPlayground extends GANPlaygroundPolymer {
         this.setupDatasetStats();
       });
     }
-    this.querySelector("#optimizer-dropdown .dropdown-content")
+    this.querySelector("#disc-optimizer-dropdown .dropdown-content")
         // tslint:disable-next-line:no-any
         .addEventListener('iron-activate', (event: any) => {
           // Activate, deactivate hyper parameter inputs.
-          this.refreshHyperParamRequirements(event.detail.selected);
+          this.refreshHyperParamRequirements(event.detail.selected,
+            'disc');
         });
-    this.learningRate = 0.02;
-    this.momentum = 0.1;
-    this.needMomentum = true;
-    this.gamma = 0.1;
-    this.needGamma = false;
+
+    this.querySelector("#gen-optimizer-dropdown .dropdown-content")
+        // tslint:disable-next-line:no-any
+        .addEventListener('iron-activate', (event: any) => {
+          // Activate, deactivate hyper parameter inputs.
+          this.refreshHyperParamRequirements(event.detail.selected,
+            'gen');
+        });
+
+    this.discLearningRate = 0.02;
+    this.genLearningRate = 0.002;
+    this.discMomentum = 0.1;
+    this.genMomentum = 0.1;
+    this.discNeedMomentum = true;
+    this.genNeedMomentum = true;
+    this.discGamma = 0.1;
+    this.genGamma = 0.1;
+    this.discNeedGamma = true;
+    this.genNeedGamma = true;
     this.batchSize = 15;
     // Default optimizer is momentum
-    this.selectedOptimizerName = "momentum";
+    this.discSelectedOptimizerName = "rmsprop";
+    this.genSelectedOptimizerName = "rmsprop";
     this.optimizerNames = ["sgd", "momentum", "rmsprop", "adagrad"];
 
     this.applicationState = ApplicationState.IDLE;
@@ -388,76 +416,106 @@ export class GANPlayground extends GANPlaygroundPolymer {
     }
   }
 
-  private resetHyperParamRequirements() {
-    this.needMomentum = false;
-    this.needGamma = false;
+  private resetHyperParamRequirements(which: string) {
+    if (which === 'gen') {
+      this.genNeedMomentum = false;
+      this.genNeedGamma = false;
+    } else {
+      this.discNeedMomentum = false;
+      this.discNeedGamma = false;
+    }
   }
 
   /**
    * Set flag to disable input by optimizer selection.
    */
-  private refreshHyperParamRequirements(optimizerName: string) {
-    this.resetHyperParamRequirements();
+  private refreshHyperParamRequirements(optimizerName: string,
+    which: string) {
+    this.resetHyperParamRequirements(which);
     switch (optimizerName) {
       case "sgd": {
         // No additional hyper parameters
         break;
       }
       case "momentum": {
-        this.needMomentum = true;
+        if (which === 'gen') {
+          this.genNeedMomentum = true;
+        } else {
+          this.discNeedMomentum = true;
+        }
         break;
       }
       case "rmsprop": {
-        this.needMomentum = true;
-        this.needGamma = true;
+        if (which === 'gen') {
+          this.genNeedMomentum = true;
+          this.genNeedGamma = true;
+        } else {
+          this.discNeedMomentum = true;
+          this.discNeedGamma = true;
+        }
         break;
       }
       case "adagrad": {
-        this.needMomentum = true;
+        if (which === 'gen') {
+          this.genNeedMomentum = true;
+        } else {
+          this.discNeedMomentum = true;
+        }
         break;
       }
       default: {
-        throw new Error(`Unknown optimizer "${this.selectedOptimizerName}"`);
+        throw new Error(`Unknown optimizer`);
       }
     }
   }
 
-  private createOptimizer() {
-    switch (this.selectedOptimizerName) {
+  private createOptimizer(which: string) {
+    if (which === 'gen') {
+      var selectedOptimizerName = this.genSelectedOptimizerName;
+      var learningRate = this.genLearningRate;
+      var momentum = this.genMomentum;
+      var gamma = this.genGamma;
+      var varName = 'generator';
+    } else {
+      var selectedOptimizerName = this.discSelectedOptimizerName;
+      var learningRate = this.discLearningRate;
+      var momentum = this.discMomentum;
+      var gamma = this.discGamma;
+      var varName = 'discriminator';
+    }
+    switch (selectedOptimizerName) {
       case 'sgd': {
-        return new SGDOptimizer(+this.learningRate);
+        return new SGDOptimizer(+learningRate,
+          this.graph.getNodes().filter((x) => 
+            x.name.startsWith(varName)));
       }
       case 'momentum': {
-        return new MomentumOptimizer(+this.learningRate, +this.momentum);
+        return new MomentumOptimizer(+learningRate, +momentum,
+          this.graph.getNodes().filter((x) => 
+            x.name.startsWith(varName)));
       }
       case 'rmsprop': {
-        return new RMSPropOptimizer(+this.learningRate, +this.gamma);
+        return new RMSPropOptimizer(+learningRate, +gamma,
+          this.graph.getNodes().filter((x) => 
+            x.name.startsWith(varName)));
       }
       case 'adagrad': {
-        return new AdagradOptimizer(+this.learningRate, +this.gamma);
+        return new AdagradOptimizer(+learningRate, +gamma,
+          this.graph.getNodes().filter((x) => 
+            x.name.startsWith(varName)));
       }
       default: {
-        throw new Error(`Unknown optimizer "${this.selectedOptimizerName}"`);
+        throw new Error(`Unknown optimizer`);
       }
     }
-  }
-
-  private createDiscOptimizer() {
-    return new RMSPropOptimizer(0.02, +this.gamma,
-      this.graph.getNodes().filter((x) => x.name.startsWith('discriminator')));
-  }
-
-  private createGenOptimizer() {
-    return new RMSPropOptimizer(0.002, +this.gamma,
-      this.graph.getNodes().filter((x) => x.name.startsWith('generator')));
   }
 
   private startTraining() {
     const data = this.getImageDataOnly();
 
     // Recreate optimizer with the selected optimizer and hyperparameters.
-    this.discOptimizer = this.createDiscOptimizer();
-    this.genOptimizer = this.createGenOptimizer();
+    this.discOptimizer = this.createOptimizer('disc');
+    this.genOptimizer = this.createOptimizer('gen');
 
     if (this.isValid && data != null) {
       this.recreateCharts();
