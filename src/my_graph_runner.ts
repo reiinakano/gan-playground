@@ -258,8 +258,8 @@ export class MyGraphRunner {
         );
 
         genImageValues.push(track(NDArray.like(evaluatedTensors[0])));
-        discPredictionFakeValues.push(evaluatedTensors[1]);
-        discPredictionRealValues.push(evaluatedTensors[2]);
+        discPredictionFakeValues.push(track(NDArray.like(evaluatedTensors[1])));
+        discPredictionRealValues.push(track(NDArray.like(evaluatedTensors[2])));
       }
 
       if (this.eventObserver.inferenceExamplesPerSecCallback != null) {
