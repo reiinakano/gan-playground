@@ -328,7 +328,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
           this.graphRunner.setMath(this.math);
         });
 
-    this.hiddenLayers = [];
+    this.discHiddenLayers = [];
     this.examplesPerSec = 0;
     this.inferencesPerSec = 0;
     this.generationsPerSec = 0;
@@ -584,12 +584,12 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
     let network = this.xTensor;
 
-    for (let i = 0; i < this.hiddenLayers.length; i++) {
+    for (let i = 0; i < this.discHiddenLayers.length; i++) {
       let weights: LayerWeightsDict|null = null;
       if (this.loadedWeights != null) {
         weights = this.loadedWeights[i];
       }
-      network = this.hiddenLayers[i].addLayer(g, network, i, weights);
+      network = this.discHiddenLayers[i].addLayer(g, network, i, weights);
     }
     this.predictionTensor = network;
     this.costTensor =
@@ -659,12 +659,12 @@ export class GANPlayground extends GANPlaygroundPolymer {
     // Construct discriminator
     let disc1 = gen;
     let disc2 = this.xTensor;
-    for (let i = 0; i < this.hiddenLayers.length; i++) {
+    for (let i = 0; i < this.discHiddenLayers.length; i++) {
       let weights: LayerWeightsDict|null = null;
       if (this.loadedWeights != null) {
         weights = this.loadedWeights[i];
       }
-      [disc1, disc2] = this.hiddenLayers[i].addLayerMultiple(g, [disc1, disc2], 
+      [disc1, disc2] = this.discHiddenLayers[i].addLayerMultiple(g, [disc1, disc2], 
         'discriminator', weights);
     }
     /*
@@ -1105,47 +1105,47 @@ export class GANPlayground extends GANPlaygroundPolymer {
     modelLayer.className = 'layer';
     this.layersContainer.appendChild(modelLayer);
 
-    const lastHiddenLayer = this.hiddenLayers[this.hiddenLayers.length - 1];
+    const lastHiddenLayer = this.discHiddenLayers[this.discHiddenLayers.length - 1];
     const lastOutputShape = lastHiddenLayer != null ?
         lastHiddenLayer.getOutputShape() :
         this.inputShape;
-    this.hiddenLayers.push(modelLayer);
+    this.discHiddenLayers.push(modelLayer);
     modelLayer.initialize(this, lastOutputShape);
     return modelLayer;
   }
 
   removeLayer(modelLayer: ModelLayer) {
     this.layersContainer.removeChild(modelLayer);
-    this.hiddenLayers.splice(this.hiddenLayers.indexOf(modelLayer), 1);
+    this.discHiddenLayers.splice(this.discHiddenLayers.indexOf(modelLayer), 1);
     this.layerParamChanged();
   }
 
   private removeAllLayers() {
-    for (let i = 0; i < this.hiddenLayers.length; i++) {
-      this.layersContainer.removeChild(this.hiddenLayers[i]);
+    for (let i = 0; i < this.discHiddenLayers.length; i++) {
+      this.layersContainer.removeChild(this.discHiddenLayers[i]);
     }
-    this.hiddenLayers = [];
+    this.discHiddenLayers = [];
     this.layerParamChanged();
   }
 
   private validateModel() {
     let valid = true;
-    for (let i = 0; i < this.hiddenLayers.length; ++i) {
-      valid = valid && this.hiddenLayers[i].isValid();
+    for (let i = 0; i < this.discHiddenLayers.length; ++i) {
+      valid = valid && this.discHiddenLayers[i].isValid();
     }
-    if (this.hiddenLayers.length > 0) {
-      const lastLayer = this.hiddenLayers[this.hiddenLayers.length - 1];
+    if (this.discHiddenLayers.length > 0) {
+      const lastLayer = this.discHiddenLayers[this.discHiddenLayers.length - 1];
       valid = valid &&
           util.arraysEqual(this.labelShape, lastLayer.getOutputShape());
     }
-    this.isValid = valid && (this.hiddenLayers.length > 0);
+    this.isValid = valid && (this.discHiddenLayers.length > 0);
   }
 
   layerParamChanged() {
     // Go through each of the model layers and propagate shapes.
     let lastOutputShape = this.inputShape;
-    for (let i = 0; i < this.hiddenLayers.length; i++) {
-      lastOutputShape = this.hiddenLayers[i].setInputShape(lastOutputShape);
+    for (let i = 0; i < this.discHiddenLayers.length; i++) {
+      lastOutputShape = this.discHiddenLayers[i].setInputShape(lastOutputShape);
     }
     this.validateModel();
 
@@ -1196,8 +1196,8 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
   private getModelAsJson(): string {
     const layerBuilders: LayerBuilder[] = [];
-    for (let i = 0; i < this.hiddenLayers.length; i++) {
-      layerBuilders.push(this.hiddenLayers[i].layerBuilder);
+    for (let i = 0; i < this.discHiddenLayers.length; i++) {
+      layerBuilders.push(this.discHiddenLayers[i].layerBuilder);
     }
     return JSON.stringify(layerBuilders);
   }
@@ -1209,7 +1209,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     for (let i = 0; i < layerBuilders.length; i++) {
       const modelLayer = this.addLayer();
       modelLayer.loadParamsFromLayerBuilder(lastOutputShape, layerBuilders[i]);
-      lastOutputShape = this.hiddenLayers[i].setInputShape(lastOutputShape);
+      lastOutputShape = this.discHiddenLayers[i].setInputShape(lastOutputShape);
     }
     this.validateModel();
   }
