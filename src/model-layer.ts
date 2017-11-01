@@ -124,6 +124,13 @@ export class ModelLayer extends ModelLayerPolymer {
         g, network, this.inputShape, index, weights);
   }
 
+  addLayerMultiple(
+      g: Graph, networks: Tensor[], name: string,
+      weights: LayerWeightsDict|null): Tensor[] {
+    return this.layerBuilder.addLayerMultiple(
+        g, networks, this.inputShape, name, weights);
+  }
+
   /**
    * Build parameters for the UI for a given op type. This is called when the
    * op is added, and when the op type changes.

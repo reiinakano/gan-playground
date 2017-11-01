@@ -655,7 +655,19 @@ export class GANPlayground extends GANPlaygroundPolymer {
     gen = g.add(gen, genOutBias);
     gen = g.reshape(gen, this.xTensor.shape);
     gen = g.tanh(gen);
-    
+
+    // Construct discriminator
+    let disc1 = gen;
+    let disc2 = this.xTensor;
+    for (let i = 0; i < this.hiddenLayers.length; i++) {
+      let weights: LayerWeightsDict|null = null;
+      if (this.loadedWeights != null) {
+        weights = this.loadedWeights[i];
+      }
+      [disc1, disc2] = this.hiddenLayers[i].addLayerMultiple(g, [disc1, disc2], 
+        'discriminator', weights);
+    }
+    /*
     // Construct discriminator for generated images
     let disc1 = gen;
     disc1 = g.reshape(disc1, [disc1.shape[0]*disc1.shape[1]*disc1.shape[2]]);
@@ -690,7 +702,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     disc2 = g.relu(disc2);
     disc2 = g.matmul(disc2, discOutWeight);
     disc2 = g.add(disc2, discOutBias);
-    disc2 = g.sigmoid(disc2);
+    disc2 = g.sigmoid(disc2);*/
 
     this.discPredictionReal = disc2;
     this.discPredictionFake = disc1;
@@ -769,7 +781,8 @@ export class GANPlayground extends GANPlaygroundPolymer {
     });
 
     this.inputShape = this.dataSet.getDataShape(IMAGE_DATA_INDEX);
-    this.labelShape = this.dataSet.getDataShape(LABEL_DATA_INDEX);
+    //this.labelShape = this.dataSet.getDataShape(LABEL_DATA_INDEX);
+    this.labelShape = [2];
 
     this.layersContainer =
         this.querySelector('#hidden-layers') as HTMLDivElement;
