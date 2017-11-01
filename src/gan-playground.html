@@ -30,7 +30,7 @@ limitations under the License.
 <link rel="import" href="../bower_components/paper-tooltip/paper-tooltip.html">
 
 <style>
-#button-container {
+.button-container {
   width: 400px;
   margin-top: 15px;
 }
@@ -94,19 +94,19 @@ ndarray-logits-visualizer {
   display: inline-block;
   margin-top: 10px;
 }
-#layers {
+#layers, #gen-layers {
   width: 400px;
 }
 #gan-playground-container {
   display: flex;
   width: 100%;
 }
-#model {
+#model, #gen-model {
   border-right: 1px solid rgba(0, 0, 0, 0.1);
   width: 400px;
   position: relative;
 }
-#model  > div {
+#model, #gen-model  > div {
   padding-left: 15px;
 }
 .panel-content {
@@ -339,22 +339,36 @@ paper-progress {
       <input type="file" id="model-file" name="model-file" style="display:none"/>
       <input type="file" id="weights-file" name="weights-file" style="display:none"/>
     </div>
+    <div class="two-way-toggle">
+      <span>Environment: CPU</span>
+      <paper-toggle-button id="environment-toggle" checked>GPU</paper-toggle-button>
+    </div>
   </div>
   <div id="model" class="ink-panel">
-    <div class="title">MODEL</div>
+    <div class="title">DISCRIMINATOR</div>
     <div class="panel-content">
-      <div class="two-way-toggle">
-        <span>Environment: CPU</span>
-        <paper-toggle-button id="environment-toggle" checked>GPU</paper-toggle-button>
-      </div>
       <div id="layers">
         <model-layer class="layer" id="input-layer" layer-name="Input Image" is-static></model-layer>
         <div id="hidden-layers"></div>
         <model-layer class="layer" id="cost-layer" layer-name="Softmax Cross-Entropy" is-static></model-layer>
         <model-layer class="layer" id="output-layer" layer-name="Label" is-static></model-layer>
       </div>
-      <div id="button-container">
+      <div class="button-container">
         <paper-button class="button" raised id="add-layer">Add a layer</paper-button><br>
+      </div>
+    </div>
+  </div>
+
+  <div id="gen-model" class="ink-panel">
+    <div class="title">GENERATOR</div>
+    <div class="panel-content">
+      <div id="gen-layers">
+        <model-layer class="layer" id="gen-input-layer" layer-name="Generator Random Vector" is-static></model-layer>
+        <div id="gen-hidden-layers"></div>
+        <model-layer class="layer" id="gen-output-layer" layer-name="Output Image" is-static></model-layer>
+      </div>
+      <div class="button-container">
+        <paper-button class="button" raised id="gen-add-layer">Add a layer</paper-button><br>
       </div>
     </div>
   </div>

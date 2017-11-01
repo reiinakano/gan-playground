@@ -791,6 +791,10 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.inputLayer.outputShapeDisplay =
         model_builder_util.getDisplayShape(this.inputShape);
 
+    this.genInputLayer = this.querySelector('#gen-input-layer') as ModelLayer;
+    this.genInputLayer.outputShapeDisplay =
+        model_builder_util.getDisplayShape([100]);
+
     const labelShapeDisplay =
         model_builder_util.getDisplayShape(this.labelShape);
     const costLayer = this.querySelector('#cost-layer') as ModelLayer;
@@ -799,6 +803,9 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
     const outputLayer = this.querySelector('#output-layer') as ModelLayer;
     outputLayer.inputShapeDisplay = labelShapeDisplay;
+    const genOutputLayer = this.querySelector('#gen-output-layer') as ModelLayer;
+    genOutputLayer.inputShapeDisplay = 
+        model_builder_util.getDisplayShape(this.inputShape);
 
     this.buildRealImageContainer();
     this.buildFakeImageContainer();
