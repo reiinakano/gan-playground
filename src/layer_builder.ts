@@ -95,6 +95,9 @@ export interface LayerBuilder {
   addLayer(
       g: Graph, network: Tensor, inputShape: number[], index: number,
       weights?: LayerWeightsDict|null): Tensor;
+  addLayerMultiple(
+      g: Graph, networks: Tensor[], inputShape: number[], name: string,
+      weights?: LayerWeightsDict|null): Tensor[];
   // Return null if no errors, otherwise return an array of errors.
   validate(inputShape: number[]): string[]|null;
 }
@@ -142,6 +145,33 @@ export class FullyConnectedLayerBuilder implements LayerBuilder {
         biasInitializer);
   }
 
+  addLayerMultiple(
+      g: Graph, networks: Tensor[], inputShape: number[], name: string,
+      weights: LayerWeightsDict|null): Tensor[] {
+    const inputSize = util.sizeFromShape(inputShape);
+    const wShape: [number, number] = [inputSize, this.hiddenUnits];
+
+    let w: Array2D;
+    let b: Array1D;
+
+    if (weights != null) {
+      throw new Error;
+    } else {
+      w = Array2D.randTruncatedNormal(wShape, 0, 0.1);
+      b = Array1D.zeros([this.hiddenUnits]);
+    }
+    const wTensor = g.variable(name + '-weights', w);
+    const bTensor = g.variable(name + '-bias', b);
+
+    const returnedTensors = []
+    for (let i = 0; i < networks.length; i++) {
+      returnedTensors.push(
+        g.add(g.matmul(networks[i], wTensor), bTensor)
+      );
+    }
+    return returnedTensors;
+  }
+
   validate(inputShape: number[]) {
     if (inputShape.length !== 1) {
       return ['Input shape must be a Array1D.'];
@@ -164,6 +194,16 @@ export class ReLULayerBuilder implements LayerBuilder {
       g: Graph, network: Tensor, inputShape: number[], index: number,
       weights: LayerWeightsDict|null): Tensor {
     return g.relu(network);
+  }
+
+  addLayerMultiple(
+      g: Graph, networks: Tensor[], inputShape: number[], name: string,
+      weights: LayerWeightsDict|null): Tensor[] {
+    const returnedTensors = []
+    for (let i = 0; i < networks.length; i++) {
+      returnedTensors.push(g.relu(networks[i]));
+    }
+    return returnedTensors;
   }
 
   validate(inputShape: number[]): string[]|null {
@@ -247,6 +287,34 @@ export class Convolution2DLayerBuilder implements LayerBuilder {
         this.stride, this.zeroPad);
   }
 
+  addLayerMultiple(
+      g: Graph, networks: Tensor[], inputShape: number[], name: string,
+      weights: LayerWeightsDict|null): Tensor[] {
+    const wShape: [number, number, number, number] = 
+        [this.fieldSize, this.fieldSize, inputShape[2], this.outputDepth];
+    let w: Array4D;
+    let b: Array1D;
+    if (weights != null) {
+      w = Array4D.new(wShape, weights['W']);
+      b = Array1D.new(weights['b']);
+    } else {
+      w = Array4D.randTruncatedNormal(wShape, 0, 0.1);
+      b = Array1D.zeros([this.outputDepth]);
+    }
+    const wTensor = g.variable(name + 'conv2d-w', w);
+    const bTensor = g.variable(name + 'conv2d-b', b);
+
+    const returnedTensors = []
+    for (let i = 0; i < networks.length; i++) {
+      returnedTensors.push(
+        g.conv2d(
+          networks[i], wTensor, bTensor, this.fieldSize,
+          this.outputDepth, this.stride, this.zeroPad)
+      );
+    }
+    return returnedTensors;
+  }
+
   validate(inputShape: number[]) {
     if (inputShape.length !== 3) {
       return ['Input shape must be a Array3D.'];
@@ -305,6 +373,17 @@ export class MaxPoolLayerBuilder implements LayerBuilder {
     return g.maxPool(network, this.fieldSize, this.stride, this.zeroPad);
   }
 
+  addLayerMultiple(
+      g: Graph, networks: Tensor[], inputShape: number[], name: string,
+      weights: LayerWeightsDict|null): Tensor[] {
+    const returnedTensors = []
+    for (let i = 0; i < networks.length; i++) {
+      returnedTensors.push(g.maxPool(networks[i], this.fieldSize,
+        this.stride, this.zeroPad));
+    }
+    return returnedTensors;
+  }
+
   validate(inputShape: number[]) {
     if (inputShape.length !== 3) {
       return ['Input shape must be a Array3D.'];
@@ -337,6 +416,16 @@ export class ReshapeLayerBuilder implements LayerBuilder {
     return g.reshape(network, this.outputShape);
   }
 
+  addLayerMultiple(
+      g: Graph, networks: Tensor[], inputShape: number[], name: string,
+      weights: LayerWeightsDict|null): Tensor[] {
+    const returnedTensors = []
+    for (let i = 0; i < networks.length; i++) {
+      returnedTensors.push(g.reshape(networks[i], this.outputShape));
+    }
+    return returnedTensors;
+  }
+
   validate(inputShape: number[]) {
     const inputSize = util.sizeFromShape(inputShape);
     const outputSize = util.sizeFromShape(this.outputShape);
@@ -364,6 +453,17 @@ export class FlattenLayerBuilder implements LayerBuilder {
       g: Graph, network: Tensor, inputShape: number[], index: number,
       weights: LayerWeightsDict|null): Tensor {
     return g.reshape(network, this.getOutputShape(inputShape));
+  }
+
+  addLayerMultiple(
+      g: Graph, networks: Tensor[], inputShape: number[], name: string,
+      weights: LayerWeightsDict|null): Tensor[] {
+    const returnedTensors = []
+    for (let i = 0; i < networks.length; i++) {
+      returnedTensors.push(g.reshape(networks[i], 
+        this.getOutputShape(inputShape)));
+    }
+    return returnedTensors;
   }
 
   validate(inputShape: number[]): string[]|null {
