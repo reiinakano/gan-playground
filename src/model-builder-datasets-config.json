@@ -12,11 +12,14 @@
       "shape": [10]
     }],
     "modelConfigs": {
-      "Fully connected": {
+      "Fully connected (disc)": {
         "path": "mnist-fully-connected.json"
       },
-      "Convolutional": {
+      "Convolutional (disc)": {
         "path": "mnist-conv.json"
+      },
+      "Fully connected (gen)": {
+        "path": "gen-mnist-fully-connected.json"
       }
     }
   },

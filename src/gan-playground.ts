@@ -75,6 +75,7 @@ export let GANPlaygroundPolymer: new () => PolymerHTMLElement = PolymerElement({
     datasetNames: Array,
     selectedDatasetName: String,
     modelNames: Array,
+    genModelNames: Array,
     discSelectedOptimizerName: String,
     genSelectedOptimizerName: String,
     optimizerNames: Array,
@@ -90,6 +91,7 @@ export let GANPlaygroundPolymer: new () => PolymerHTMLElement = PolymerElement({
     genNeedGamma: Boolean,
     batchSize: Number,
     selectedModelName: String,
+    genSelectedModelName: String,
     selectedNormalizationOption:
         {type: Number, value: Normalization.NORMALIZATION_NEGATIVE_ONE_TO_ONE},
     // Stats
@@ -137,7 +139,9 @@ export class GANPlayground extends GANPlaygroundPolymer {
   private datasetNames: string[];
   private selectedDatasetName: string;
   private modelNames: string[];
+  private genModelNames: string[];
   private selectedModelName: string;
+  private genSelectedModelName: string;
   private optimizerNames: string[];
   private discSelectedOptimizerName: string;
   private genSelectedOptimizerName: string;
@@ -275,7 +279,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
         });
 
     this.discLearningRate = 0.02;
-    this.genLearningRate = 0.002;
+    this.genLearningRate = 0.01;
     this.discMomentum = 0.1;
     this.genMomentum = 0.1;
     this.discNeedMomentum = true;
@@ -904,16 +908,24 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
   private populateModelDropdown() {
     const modelNames = ['Custom'];
+    const genModelNames = ['Custom'];
 
     const modelConfigs =
         this.xhrDatasetConfigs[this.selectedDatasetName].modelConfigs;
     for (const modelName in modelConfigs) {
       if (modelConfigs.hasOwnProperty(modelName)) {
-        modelNames.push(modelName);
+        if (modelName.endsWith('(disc)')) {
+          modelNames.push(modelName);
+        } else {
+          genModelNames.push(modelName);
+        }
       }
     }
+
     this.modelNames = modelNames;
+    this.genModelNames = genModelNames;
     this.selectedModelName = modelNames[modelNames.length - 1];
+    this.genSelectedModelName = genModelNames[genModelNames.length - 1];
     this.updateSelectedModel(this.selectedModelName);
   }
 
