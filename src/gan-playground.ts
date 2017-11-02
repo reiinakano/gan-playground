@@ -1195,7 +1195,11 @@ export class GANPlayground extends GANPlaygroundPolymer {
     for (let i = 0; i < this.discHiddenLayers.length; i++) {
       this.layersContainer.removeChild(this.discHiddenLayers[i]);
     }
+    for (let i = 0; i < this.genHiddenLayers.length; i++) {
+      this.genLayersContainer.removeChild(this.genHiddenLayers[i]);
+    }
     this.discHiddenLayers = [];
+    this.genHiddenLayers = [];
     this.layerParamChanged();
   }
 
