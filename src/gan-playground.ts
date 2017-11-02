@@ -241,7 +241,8 @@ export class GANPlayground extends GANPlaygroundPolymer {
               this.updateSelectedDataset(datasetName);
 
               // TODO(nsthorat): Remember the last model used for each dataset.
-              this.removeAllLayers();
+              this.removeAllLayers('gen');
+              this.removeAllLayers('disc');
             });
     this.querySelector('#model-dropdown .dropdown-content')
         .addEventListener(
@@ -939,7 +940,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
   }
 
   private updateSelectedModel(modelName: string, which: string) {
-    this.removeAllLayers();
+    this.removeAllLayers(which);
     if (modelName === 'Custom') {
       // TODO(nsthorat): Remember the custom layers.
       return;
@@ -1140,11 +1141,9 @@ export class GANPlayground extends GANPlaygroundPolymer {
       const fakeSoftmaxLogits = this.math.softmax(fakeLogits[i]);
 
       this.outputNDArrayVisualizers[i].drawLogits(
-          realSoftmaxLogits, realLabels[i],
-          this.xhrDatasetConfigs[this.selectedDatasetName].labelClassNames);
+          realSoftmaxLogits, realLabels[i]);
       this.fakeOutputNDArrayVisualizers[i].drawLogits(
-          fakeSoftmaxLogits, fakeLabels[i],
-          this.xhrDatasetConfigs[this.selectedDatasetName].labelClassNames);
+          fakeSoftmaxLogits, fakeLabels[i]);
       this.inputNDArrayVisualizers[i].draw();
       this.fakeInputNDArrayVisualizers[i].draw();
 
@@ -1191,15 +1190,19 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.layerParamChanged();
   }
 
-  private removeAllLayers() {
-    for (let i = 0; i < this.discHiddenLayers.length; i++) {
-      this.layersContainer.removeChild(this.discHiddenLayers[i]);
+  private removeAllLayers(which: string) {
+    if (which === 'gen') {
+      for (let i = 0; i < this.genHiddenLayers.length; i++) {
+        this.genLayersContainer.removeChild(this.genHiddenLayers[i]);
+      }
+      this.genHiddenLayers = [];  
+    } else {
+      for (let i = 0; i < this.discHiddenLayers.length; i++) {
+        this.layersContainer.removeChild(this.discHiddenLayers[i]);
+      }
+      this.discHiddenLayers = [];
     }
-    for (let i = 0; i < this.genHiddenLayers.length; i++) {
-      this.genLayersContainer.removeChild(this.genHiddenLayers[i]);
-    }
-    this.discHiddenLayers = [];
-    this.genHiddenLayers = [];
+    
     this.layerParamChanged();
   }
 
@@ -1279,7 +1282,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
       fileInput.value = '';
       const fileReader = new FileReader();
       fileReader.onload = (evt) => {
-        this.removeAllLayers();
+        this.removeAllLayers('disc');
         const modelJson: string = fileReader.result;
         this.loadModelFromJson(modelJson, 'disc');
       };
