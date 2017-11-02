@@ -62,7 +62,7 @@
     }],
     "labelClassNames": ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"],
     "modelConfigs": {
-      "Convolutional": {
+      "Convolutional (disc)": {
         "path": "cifar10-conv.json"
       }
     }
