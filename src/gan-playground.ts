@@ -181,6 +181,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
   private inputShape: number[];
   private labelShape: number[];
+  private randVectorShape: number[];
   private examplesPerSec: number;
   private examplesTrained: number;
   private inferencesPerSec: number;
@@ -336,6 +337,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.examplesPerSec = 0;
     this.inferencesPerSec = 0;
     this.generationsPerSec = 0;
+    this.randVectorShape = [100];
   }
 
   isTraining(applicationState: ApplicationState): boolean {
@@ -408,7 +410,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
       const inferenceFeeds = [
         {tensor: this.xTensor, data: inputImageProvider},
-        {tensor: this.randomTensor, data: getRandomInputProvider([100])},
+        {tensor: this.randomTensor, data: getRandomInputProvider(this.randVectorShape)},
         {tensor: this.oneTensor, data: oneInputProvider},
         {tensor: this.zeroTensor, data: zeroInputProvider}
       ]
@@ -550,13 +552,13 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
       const discFeeds = [
         {tensor: this.xTensor, data: inputImageProvider},
-        {tensor: this.randomTensor, data: getRandomInputProvider([100])},
+        {tensor: this.randomTensor, data: getRandomInputProvider(this.randVectorShape)},
         {tensor: this.oneTensor, data: oneInputProvider},
         {tensor: this.zeroTensor, data: zeroInputProvider}
       ]
 
       const genFeeds = [
-        {tensor: this.randomTensor, data: getRandomInputProvider([100])},
+        {tensor: this.randomTensor, data: getRandomInputProvider(this.randVectorShape)},
         {tensor: this.oneTensor, data: oneInputProvider},
         {tensor: this.zeroTensor, data: zeroInputProvider}
       ]
@@ -625,7 +627,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     // Construct graph
     this.graph = new Graph();
     const g = this.graph;
-    this.randomTensor = g.placeholder('random', [100]);
+    this.randomTensor = g.placeholder('random', this.randVectorShape);
     this.xTensor = g.placeholder('input', [28, 28, 1]);
     this.oneTensor = g.placeholder('one', [2]);
     this.zeroTensor = g.placeholder('zero', [2]);
@@ -799,7 +801,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
     this.genInputLayer = this.querySelector('#gen-input-layer') as ModelLayer;
     this.genInputLayer.outputShapeDisplay =
-        model_builder_util.getDisplayShape([100]);
+        model_builder_util.getDisplayShape(this.randVectorShape);
 
     const labelShapeDisplay =
         model_builder_util.getDisplayShape(this.labelShape);
@@ -1121,7 +1123,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     if (which === 'gen') {
       layersContainer = this.genLayersContainer;
       hiddenLayers = this.genHiddenLayers;
-      inputShape = [100];
+      inputShape = this.randVectorShape;
     } else {
       layersContainer = this.layersContainer;
       hiddenLayers = this.discHiddenLayers;
@@ -1136,13 +1138,18 @@ export class GANPlayground extends GANPlaygroundPolymer {
         lastHiddenLayer.getOutputShape() :
         inputShape;
     hiddenLayers.push(modelLayer);
-    modelLayer.initialize(this, lastOutputShape);
+    modelLayer.initialize(this, lastOutputShape, which);
     return modelLayer;
   }
 
-  removeLayer(modelLayer: ModelLayer) {
-    this.layersContainer.removeChild(modelLayer);
-    this.discHiddenLayers.splice(this.discHiddenLayers.indexOf(modelLayer), 1);
+  removeLayer(modelLayer: ModelLayer, which: string) {
+    if (which === 'gen') {
+      this.genLayersContainer.removeChild(modelLayer);
+      this.genHiddenLayers.splice(this.genHiddenLayers.indexOf(modelLayer), 1);
+    } else {
+      this.layersContainer.removeChild(modelLayer);
+      this.discHiddenLayers.splice(this.discHiddenLayers.indexOf(modelLayer), 1);
+    }
     this.layerParamChanged();
   }
 
@@ -1173,6 +1180,12 @@ export class GANPlayground extends GANPlaygroundPolymer {
     for (let i = 0; i < this.discHiddenLayers.length; i++) {
       lastOutputShape = this.discHiddenLayers[i].setInputShape(lastOutputShape);
     }
+
+    lastOutputShape = this.randVectorShape;
+    for (let i = 0; i < this.genHiddenLayers.length; i++) {
+      lastOutputShape = this.genHiddenLayers[i].setInputShape(lastOutputShape);
+    }
+
     this.validateModel();
 
     if (this.isValid) {

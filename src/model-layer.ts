@@ -54,7 +54,8 @@ export class ModelLayer extends ModelLayerPolymer {
 
   private paramContainer: HTMLDivElement;
 
-  initialize(ganPlayground: GANPlayground, inputShape: number[]) {
+  initialize(ganPlayground: GANPlayground, inputShape: number[],
+    which: string) {
     this.ganPlayground = ganPlayground;
     this.paramContainer =
         this.querySelector('.param-container') as HTMLDivElement;
@@ -73,7 +74,7 @@ export class ModelLayer extends ModelLayerPolymer {
             });
 
     this.querySelector('#remove-layer').addEventListener('click', (event) => {
-      ganPlayground.removeLayer(this);
+      ganPlayground.removeLayer(this, which);
     });
   }
 
