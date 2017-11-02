@@ -587,48 +587,6 @@ export class GANPlayground extends GANPlaygroundPolymer {
     }
   }
 
-  /*
-  private createModel() {
-    if (this.session != null) {
-      this.session.dispose();
-    }
-
-    this.modelInitialized = false;
-    if (this.isValid === false) {
-      return;
-    }
-
-    this.graph = new Graph();
-    const g = this.graph;
-    this.xTensor = g.placeholder('input', this.inputShape);
-    this.labelTensor = g.placeholder('label', this.labelShape);
-
-    let network = this.xTensor;
-
-    for (let i = 0; i < this.discHiddenLayers.length; i++) {
-      let weights: LayerWeightsDict|null = null;
-      if (this.loadedWeights != null) {
-        weights = this.loadedWeights[i];
-      }
-      network = this.discHiddenLayers[i].addLayer(g, network, i, weights);
-    }
-    this.predictionTensor = network;
-    this.costTensor =
-        g.softmaxCrossEntropyCost(this.predictionTensor, this.labelTensor);
-    this.accuracyTensor =
-        g.argmaxEquals(this.predictionTensor, this.labelTensor);
-
-    this.loadedWeights = null;
-
-    this.session = new Session(g, this.math);
-    this.graphRunner.setSession(this.session);
-
-    this.startInference();
-
-    this.modelInitialized = true;
-  }
-  */
-
   private createModel() {
     if (this.session != null) {
       this.session.dispose();
@@ -663,31 +621,6 @@ export class GANPlayground extends GANPlaygroundPolymer {
     }
     gen = g.tanh(gen);
 
-    /*
-    const genHidden1Weight = g.variable(
-      'generator-hidden-1-weight',
-      varianceInitializer.initialize([100, 256], 100, 256)
-    );
-    gen = g.matmul(gen, genHidden1Weight);
-    const genHidden1Bias = g.variable(
-      'generator-hidden-1-bias',
-      zerosInitializer.initialize([256], 100, 256)
-    );
-    gen = g.add(gen, genHidden1Bias)
-    gen = g.relu(gen);
-    const genOutWeight = g.variable(
-      'generator-out-weight',
-      varianceInitializer.initialize([256, 784], 256, 784)
-    );
-    gen = g.matmul(gen, genOutWeight);
-    const genOutBias = g.variable(
-      'generator-out-bias',
-      zerosInitializer.initialize([784], 256, 784)
-    );
-    gen = g.add(gen, genOutBias);
-    gen = g.reshape(gen, this.xTensor.shape);
-    gen = g.tanh(gen);*/
-
     // Construct discriminator
     let disc1 = gen;
     let disc2 = this.xTensor;
@@ -699,42 +632,6 @@ export class GANPlayground extends GANPlaygroundPolymer {
       [disc1, disc2] = this.discHiddenLayers[i].addLayerMultiple(g, [disc1, disc2], 
         'discriminator', weights);
     }
-    /*
-    // Construct discriminator for generated images
-    let disc1 = gen;
-    disc1 = g.reshape(disc1, [disc1.shape[0]*disc1.shape[1]*disc1.shape[2]]);
-    const discHidden1Weight = g.variable(
-      'discriminator-hidden-1-weight',
-      varianceInitializer.initialize([784, 256], 784, 256)
-    );
-    disc1 = g.matmul(disc1, discHidden1Weight);
-    const discHidden1Bias = g.variable(
-      'discriminator-hidden-1-bias',
-      zerosInitializer.initialize([256], 784, 256)
-    );
-    disc1 = g.add(disc1, discHidden1Bias);
-    disc1 = g.relu(disc1);
-    const discOutWeight = g.variable(
-      'discriminator-out-weight',
-      varianceInitializer.initialize([256, 2], 256, 2)
-    );
-    disc1 = g.matmul(disc1, discOutWeight);
-    const discOutBias = g.variable(
-      'discriminator-out-bias',
-      zerosInitializer.initialize([2], 256, 2)
-    );
-    disc1 = g.add(disc1, discOutBias);
-    disc1 = g.sigmoid(disc1);
-
-    // Construct second discriminator (sharing variables) for real images
-    let disc2 = this.xTensor;
-    disc2 = g.reshape(disc2, [disc2.shape[0]*disc2.shape[1]*disc2.shape[2]]);
-    disc2 = g.matmul(disc2, discHidden1Weight);
-    disc2 = g.add(disc2, discHidden1Bias);
-    disc2 = g.relu(disc2);
-    disc2 = g.matmul(disc2, discOutWeight);
-    disc2 = g.add(disc2, discOutBias);
-    disc2 = g.sigmoid(disc2);*/
 
     this.discPredictionReal = disc2;
     this.discPredictionFake = disc1;
