@@ -808,6 +808,11 @@ export class GANPlayground extends GANPlaygroundPolymer {
     const costLayer = this.querySelector('#cost-layer') as ModelLayer;
     costLayer.inputShapeDisplay = labelShapeDisplay;
     costLayer.outputShapeDisplay = labelShapeDisplay;
+    const genCostLayer = this.querySelector('#gen-cost-layer') as ModelLayer;
+    genCostLayer.inputShapeDisplay = 
+        model_builder_util.getDisplayShape(this.inputShape);
+    genCostLayer.outputShapeDisplay = 
+        model_builder_util.getDisplayShape(this.inputShape);
 
     const outputLayer = this.querySelector('#output-layer') as ModelLayer;
     outputLayer.inputShapeDisplay = labelShapeDisplay;
