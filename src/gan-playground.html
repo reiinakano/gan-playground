@@ -212,6 +212,17 @@ paper-progress {
   background-color: #a5d6a7;
 }
 
+header {
+  background: #fafafa;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  margin-top: 0px;
+}
+
+header h1 {
+  color: rgba(0, 0, 0, 0.9);
+}
+
 article {
   background: #fafafa;
   padding: 80px 0;
@@ -275,6 +286,9 @@ body {
 
 <dom-module id="gan-playground">
 <template>
+<header>
+  <h1 align="center">GAN Playground - Explore Generative Adversarial Nets in your Browser</h1>
+</header>
 <div id="gan-playground-container">
   <div id="dataset" class="ink-panel">
     <div class="title">DATA</div>
