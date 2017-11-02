@@ -296,7 +296,10 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.showDatasetStats = false;
 
     const addButton = this.querySelector('#add-layer');
-    addButton.addEventListener('click', () => this.addLayer());
+    addButton.addEventListener('click', () => this.addLayer('disc'));
+
+    const genAddButton = this.querySelector('#gen-add-layer');
+    genAddButton.addEventListener('click', () => this.addLayer('gen'));
 
     const downloadModelButton = this.querySelector('#download-model');
     downloadModelButton.addEventListener('click', () => this.downloadModel());
@@ -329,6 +332,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
         });
 
     this.discHiddenLayers = [];
+    this.genHiddenLayers = [];
     this.examplesPerSec = 0;
     this.inferencesPerSec = 0;
     this.generationsPerSec = 0;
@@ -786,6 +790,8 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
     this.layersContainer =
         this.querySelector('#hidden-layers') as HTMLDivElement;
+    this.genLayersContainer = 
+        this.querySelector('#gen-hidden-layers') as HTMLDivElement;
 
     this.inputLayer = this.querySelector('#input-layer') as ModelLayer;
     this.inputLayer.outputShapeDisplay =
@@ -1107,16 +1113,29 @@ export class GANPlayground extends GANPlaygroundPolymer {
     }
   }
 
-  addLayer(): ModelLayer {
+  addLayer(which: string): ModelLayer {
+    var layersContainer: HTMLDivElement;
+    var hiddenLayers: ModelLayer[];
+    var inputShape: number[];
+
+    if (which === 'gen') {
+      layersContainer = this.genLayersContainer;
+      hiddenLayers = this.genHiddenLayers;
+      inputShape = [100];
+    } else {
+      layersContainer = this.layersContainer;
+      hiddenLayers = this.discHiddenLayers;
+      inputShape = this.inputShape;
+    }
+
     const modelLayer = document.createElement('model-layer') as ModelLayer;
     modelLayer.className = 'layer';
-    this.layersContainer.appendChild(modelLayer);
-
-    const lastHiddenLayer = this.discHiddenLayers[this.discHiddenLayers.length - 1];
+    layersContainer.appendChild(modelLayer);
+    const lastHiddenLayer = hiddenLayers[hiddenLayers.length - 1];
     const lastOutputShape = lastHiddenLayer != null ?
         lastHiddenLayer.getOutputShape() :
-        this.inputShape;
-    this.discHiddenLayers.push(modelLayer);
+        inputShape;
+    hiddenLayers.push(modelLayer);
     modelLayer.initialize(this, lastOutputShape);
     return modelLayer;
   }
@@ -1214,7 +1233,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
     const layerBuilders = JSON.parse(modelJson) as LayerBuilder[];
     for (let i = 0; i < layerBuilders.length; i++) {
-      const modelLayer = this.addLayer();
+      const modelLayer = this.addLayer('disc');
       modelLayer.loadParamsFromLayerBuilder(lastOutputShape, layerBuilders[i]);
       lastOutputShape = this.discHiddenLayers[i].setInputShape(lastOutputShape);
     }
