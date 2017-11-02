@@ -249,7 +249,15 @@ export class GANPlayground extends GANPlaygroundPolymer {
             'iron-activate', (event: any) => {
               // Update the model.
               const modelName = event.detail.selected;
-              this.updateSelectedModel(modelName);
+              this.updateSelectedModel(modelName, 'disc');
+            });
+    this.querySelector('#gen-model-dropdown .dropdown-content')
+        .addEventListener(
+            // tslint:disable-next-line:no-any
+            'iron-activate', (event: any) => {
+              // Update the model.
+              const modelName = event.detail.selected;
+              this.updateSelectedModel(modelName, 'gen');
             });
 
     {
@@ -926,10 +934,11 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.genModelNames = genModelNames;
     this.selectedModelName = modelNames[modelNames.length - 1];
     this.genSelectedModelName = genModelNames[genModelNames.length - 1];
-    this.updateSelectedModel(this.selectedModelName);
+    this.updateSelectedModel(this.selectedModelName, 'disc');
+    this.updateSelectedModel(this.genSelectedModelName, 'gen');
   }
 
-  private updateSelectedModel(modelName: string) {
+  private updateSelectedModel(modelName: string, which: string) {
     this.removeAllLayers();
     if (modelName === 'Custom') {
       // TODO(nsthorat): Remember the custom layers.
@@ -938,15 +947,16 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
     this.loadModelFromPath(this.xhrDatasetConfigs[this.selectedDatasetName]
                                .modelConfigs[modelName]
-                               .path);
+                               .path,
+                           which);
   }
 
-  private loadModelFromPath(modelPath: string) {
+  private loadModelFromPath(modelPath: string, which: string) {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', modelPath);
 
     xhr.onload = () => {
-      this.loadModelFromJson(xhr.responseText);
+      this.loadModelFromJson(xhr.responseText, which);
     };
     xhr.onerror = (error) => {
       throw new Error(
@@ -1267,7 +1277,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
       fileReader.onload = (evt) => {
         this.removeAllLayers();
         const modelJson: string = fileReader.result;
-        this.loadModelFromJson(modelJson);
+        this.loadModelFromJson(modelJson, 'disc');
       };
       fileReader.readAsText(file);
     });
@@ -1281,14 +1291,22 @@ export class GANPlayground extends GANPlaygroundPolymer {
     return JSON.stringify(layerBuilders);
   }
 
-  private loadModelFromJson(modelJson: string) {
-    let lastOutputShape = this.inputShape;
+  private loadModelFromJson(modelJson: string, which: string) {
+    var lastOutputShape: number[];
+    var hiddenLayers: ModelLayer[];
+    if (which === 'disc') {
+      lastOutputShape = this.inputShape;
+      hiddenLayers = this.discHiddenLayers;
+    } else {
+      lastOutputShape = this.randVectorShape;
+      hiddenLayers = this.genHiddenLayers;
+    }
 
     const layerBuilders = JSON.parse(modelJson) as LayerBuilder[];
     for (let i = 0; i < layerBuilders.length; i++) {
-      const modelLayer = this.addLayer('disc');
+      const modelLayer = this.addLayer(which);
       modelLayer.loadParamsFromLayerBuilder(lastOutputShape, layerBuilders[i]);
-      lastOutputShape = this.discHiddenLayers[i].setInputShape(lastOutputShape);
+      lastOutputShape = hiddenLayers[i].setInputShape(lastOutputShape);
     }
     this.validateModel();
   }
