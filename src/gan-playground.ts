@@ -315,6 +315,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     const genAddButton = this.querySelector('#gen-add-layer');
     genAddButton.addEventListener('click', () => this.addLayer('gen'));
 
+    /*
     const downloadModelButton = this.querySelector('#download-model');
     downloadModelButton.addEventListener('click', () => this.downloadModel());
     const uploadModelButton = this.querySelector('#upload-model');
@@ -324,6 +325,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     const uploadWeightsButton = this.querySelector('#upload-weights');
     uploadWeightsButton.addEventListener('click', () => this.uploadWeights());
     this.setupUploadWeightsButton();
+    */
 
     const stopButton = this.querySelector('#stop');
     stopButton.addEventListener('click', () => {
@@ -1086,6 +1088,8 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.inferencesPerSec =
         this.smoothExamplesPerSec(this.inferencesPerSec, examplesPerSec);
     this.inferenceDuration = Number((1000 / examplesPerSec).toPrecision(3));
+    this.generationsPerSec = this.inferencesPerSec;
+    this.generationDuration = this.inferenceDuration;
   }
 
   displayExamplesPerSec(examplesPerSec: number) {
