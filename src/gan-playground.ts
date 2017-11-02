@@ -1171,7 +1171,19 @@ export class GANPlayground extends GANPlaygroundPolymer {
       valid = valid &&
           util.arraysEqual(this.labelShape, lastLayer.getOutputShape());
     }
-    this.isValid = valid && (this.discHiddenLayers.length > 0);
+    valid = valid && (this.discHiddenLayers.length > 0);
+
+    for (let i = 0; i < this.genHiddenLayers.length; ++i) {
+      valid = valid && this.genHiddenLayers[i].isValid();
+    }
+    if (this.genHiddenLayers.length > 0) {
+      const lastLayer = this.genHiddenLayers[this.genHiddenLayers.length - 1];
+      valid = valid &&
+          util.arraysEqual(this.inputShape, lastLayer.getOutputShape());
+    }
+    valid = valid && (this.genHiddenLayers.length > 0);
+
+    this.isValid = valid;
   }
 
   layerParamChanged() {
