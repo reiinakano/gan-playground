@@ -638,6 +638,17 @@ export class GANPlayground extends GANPlaygroundPolymer {
 
     // Construct generator
     let gen = this.randomTensor;
+    for (let i = 0; i < this.genHiddenLayers.length; i++) {
+      let weights: LayerWeightsDict|null = null;
+      if (this.loadedWeights != null) {
+        weights = this.loadedWeights[i];
+      }
+      [gen] = this.genHiddenLayers[i].addLayerMultiple(g, [gen], 
+        'generator', weights);
+    }
+    gen = g.tanh(gen);
+
+    /*
     const genHidden1Weight = g.variable(
       'generator-hidden-1-weight',
       varianceInitializer.initialize([100, 256], 100, 256)
@@ -660,7 +671,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     );
     gen = g.add(gen, genOutBias);
     gen = g.reshape(gen, this.xTensor.shape);
-    gen = g.tanh(gen);
+    gen = g.tanh(gen);*/
 
     // Construct discriminator
     let disc1 = gen;
