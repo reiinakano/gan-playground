@@ -287,7 +287,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
             'gen');
         });
 
-    this.discLearningRate = 0.02;
+    this.discLearningRate = 0.01;
     this.genLearningRate = 0.01;
     this.discMomentum = 0.1;
     this.genMomentum = 0.1;
@@ -299,7 +299,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.genNeedGamma = true;
     this.batchSize = 15;
     // Default optimizer is momentum
-    this.discSelectedOptimizerName = "rmsprop";
+    this.discSelectedOptimizerName = "sgd";
     this.genSelectedOptimizerName = "rmsprop";
     this.optimizerNames = ["sgd", "momentum", "rmsprop", "adagrad"];
 
