@@ -2,7 +2,7 @@
 
 Demo website: https://reiinakano.github.io/gan-playground
 
-![demo_screen](demo_screen.png)
+![demo_screen](demo_screen.jpg)
 
 ## FAQ
 
