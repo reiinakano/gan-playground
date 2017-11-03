@@ -1,0 +1,1 @@
+[{"layerName": "Fully connected", "hiddenUnits":784},{"layerName": "ReLU"},{"layerName":"Reshape","outputShape":[28,28,1]},{"layerName":"Convolution","fieldSize":3,"stride":1,"zeroPad":1,"outputDepth":10},{"layerName":"ReLU"},{"layerName":"Convolution","fieldSize":3,"stride":1,"zeroPad":1,"outputDepth":1}]

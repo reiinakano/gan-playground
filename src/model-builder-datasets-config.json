@@ -12,14 +12,17 @@
       "shape": [10]
     }],
     "modelConfigs": {
-      "Convolutional (disc)": {
-        "path": "mnist-conv.json"
-      },
       "Fully connected (disc)": {
         "path": "mnist-fully-connected.json"
       },
       "Fully connected (gen)": {
         "path": "gen-mnist-fully-connected.json"
+      },
+      "Convolutional (disc)": {
+        "path": "mnist-conv.json"
+      },
+      "Convolutional (gen)": {
+        "path": "gen-mnist-conv.json"
       }
     }
   },
@@ -37,14 +40,17 @@
     }],
     "labelClassNames": ["T-shirt/top", "Trouser", "Pullover", "Dress", "Coat", "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"],
     "modelConfigs": {
-      "Convolutional (disc)": {
-        "path": "mnist-conv.json"
-      },
       "Fully connected (disc)": {
         "path": "mnist-fully-connected.json"
       },
       "Fully connected (gen)": {
         "path": "gen-mnist-fully-connected.json"
+      },
+      "Convolutional (disc)": {
+        "path": "mnist-conv.json"
+      },
+      "Convolutional (gen)": {
+        "path": "gen-mnist-conv.json"
       }
     }
   },
