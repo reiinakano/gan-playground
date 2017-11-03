@@ -7,6 +7,7 @@ script:
   - "./scripts/deploy-demo src/gan-playground.ts src/gan-playground-index.html build"
   - "mv build/gan-playground-index.html build/index.html"
   - "cp src/support.js build/support.js"
+  - "cp src/*.json build/"
 deploy:
   provider: pages
   skip_cleanup: true
