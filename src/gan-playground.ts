@@ -601,7 +601,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.graph = new Graph();
     const g = this.graph;
     this.randomTensor = g.placeholder('random', this.randVectorShape);
-    this.xTensor = g.placeholder('input', [28, 28, 1]);
+    this.xTensor = g.placeholder('input', this.inputShape);
     this.oneTensor = g.placeholder('one', [2]);
     this.zeroTensor = g.placeholder('zero', [2]);
 
