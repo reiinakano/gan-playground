@@ -318,7 +318,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.batchSize = 15;
     // Default optimizer is momentum
     this.discSelectedOptimizerName = "sgd";
-    this.genSelectedOptimizerName = "rmsprop";
+    this.genSelectedOptimizerName = "adam";
     this.optimizerNames = ["sgd", "momentum", "rmsprop", 
         "adagrad", "adadelta", "adam"];
 
