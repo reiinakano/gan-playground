@@ -477,11 +477,6 @@ export class GANPlayground extends GANPlaygroundPolymer {
         break;
       }
       case "adagrad": {
-        if (which === 'gen') {
-          this.genNeedMomentum = true;
-        } else {
-          this.discNeedMomentum = true;
-        }
         break;
       }
       default: {
@@ -521,7 +516,7 @@ export class GANPlayground extends GANPlaygroundPolymer {
             x.name.startsWith(varName)));
       }
       case 'adagrad': {
-        return new AdagradOptimizer(+learningRate, +gamma,
+        return new AdagradOptimizer(+learningRate,
           this.graph.getNodes().filter((x) => 
             x.name.startsWith(varName)));
       }
