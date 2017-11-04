@@ -303,18 +303,18 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.genLearningRate = 0.01;
     this.discMomentum = 0.1;
     this.genMomentum = 0.1;
-    this.discNeedMomentum = true;
-    this.genNeedMomentum = true;
+    this.discNeedMomentum = false;
+    this.genNeedMomentum = false;
     this.discGamma = 0.1;
     this.genGamma = 0.1;
     this.discBeta1 = 0.9;
     this.discBeta2 = 0.999;
     this.genBeta1 = 0.9;
     this.genBeta2 = 0.999;
-    this.discNeedGamma = true;
-    this.genNeedGamma = true;
+    this.discNeedGamma = false;
+    this.genNeedGamma = false;
     this.discNeedBeta = false;
-    this.genNeedBeta = false;
+    this.genNeedBeta = true;
     this.batchSize = 15;
     // Default optimizer is momentum
     this.discSelectedOptimizerName = "sgd";
