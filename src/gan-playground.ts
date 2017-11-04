@@ -20,7 +20,7 @@ import './ndarray-logits-visualizer';
 import './model-layer';
 
 // tslint:disable-next-line:max-line-length
-import {Array1D, Array3D, DataStats, FeedEntry, Graph, InCPUMemoryShuffledInputProviderBuilder, Initializer, InMemoryDataset, MetricReduction, MomentumOptimizer, SGDOptimizer, RMSPropOptimizer, AdagradOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, OnesInitializer, Scalar, Session, Tensor, util, VarianceScalingInitializer, xhr_dataset, XhrDataset, XhrDatasetConfig, ZerosInitializer} from 'deeplearn';
+import {Array1D, Array3D, DataStats, FeedEntry, Graph, InCPUMemoryShuffledInputProviderBuilder, Initializer, InMemoryDataset, MetricReduction, MomentumOptimizer, SGDOptimizer, RMSPropOptimizer, AdagradOptimizer, AdadeltaOptimizer, AdamOptimizer, NDArray, NDArrayMath, NDArrayMathCPU, NDArrayMathGPU, Optimizer, OnesInitializer, Scalar, Session, Tensor, util, VarianceScalingInitializer, xhr_dataset, XhrDataset, XhrDatasetConfig, ZerosInitializer} from 'deeplearn';
 import {NDArrayImageVisualizer} from './ndarray-image-visualizer';
 import {NDArrayLogitsVisualizer} from './ndarray-logits-visualizer';
 import {PolymerElement, PolymerHTMLElement} from './polymer-spec';
@@ -87,8 +87,14 @@ export let GANPlaygroundPolymer: new () => PolymerHTMLElement = PolymerElement({
     genNeedMomentum: Boolean,
     discGamma: Number,
     genGamma: Number,
+    discBeta1: Number,
+    genBeta1: Number,
+    discBeta2: Number,
+    genBeta2: Number,
     discNeedGamma: Boolean,
     genNeedGamma: Boolean,
+    discNeedBeta: Boolean,
+    genNeedBeta: Boolean,
     batchSize: Number,
     selectedModelName: String,
     genSelectedModelName: String,
@@ -158,8 +164,14 @@ export class GANPlayground extends GANPlaygroundPolymer {
   private genNeedMomentum: boolean;
   private discGamma: number;
   private genGamma: number;
+  private discBeta1: number;
+  private discBeta2: number;
+  private genBeta1: number;
+  private genBeta2: number;
   private discNeedGamma: boolean;
   private genNeedGamma: boolean;
+  private discNeedBeta: boolean;
+  private genNeedBeta: boolean
   private batchSize: number;
 
   // Stats.
@@ -291,17 +303,24 @@ export class GANPlayground extends GANPlaygroundPolymer {
     this.genLearningRate = 0.01;
     this.discMomentum = 0.1;
     this.genMomentum = 0.1;
-    this.discNeedMomentum = true;
-    this.genNeedMomentum = true;
+    this.discNeedMomentum = false;
+    this.genNeedMomentum = false;
     this.discGamma = 0.1;
     this.genGamma = 0.1;
-    this.discNeedGamma = true;
-    this.genNeedGamma = true;
+    this.discBeta1 = 0.9;
+    this.discBeta2 = 0.999;
+    this.genBeta1 = 0.9;
+    this.genBeta2 = 0.999;
+    this.discNeedGamma = false;
+    this.genNeedGamma = false;
+    this.discNeedBeta = false;
+    this.genNeedBeta = true;
     this.batchSize = 15;
     // Default optimizer is momentum
     this.discSelectedOptimizerName = "sgd";
-    this.genSelectedOptimizerName = "rmsprop";
-    this.optimizerNames = ["sgd", "momentum", "rmsprop", "adagrad"];
+    this.genSelectedOptimizerName = "adam";
+    this.optimizerNames = ["sgd", "momentum", "rmsprop", 
+        "adagrad", "adadelta", "adam"];
 
     this.applicationState = ApplicationState.IDLE;
     this.loadedWeights = null;
@@ -441,9 +460,11 @@ export class GANPlayground extends GANPlaygroundPolymer {
     if (which === 'gen') {
       this.genNeedMomentum = false;
       this.genNeedGamma = false;
+      this.genNeedBeta = false;
     } else {
       this.discNeedMomentum = false;
       this.discNeedGamma = false;
+      this.discNeedBeta = false;
     }
   }
 
@@ -477,10 +498,21 @@ export class GANPlayground extends GANPlaygroundPolymer {
         break;
       }
       case "adagrad": {
+        break;
+      }
+      case 'adadelta': {
         if (which === 'gen') {
-          this.genNeedMomentum = true;
+          this.genNeedGamma = true;
         } else {
-          this.discNeedMomentum = true;
+          this.discNeedGamma = true;
+        }
+        break;
+      }
+      case 'adam': {
+        if (which === 'gen') {
+          this.genNeedBeta = true;
+        } else {
+          this.discNeedBeta = true;
         }
         break;
       }
@@ -496,12 +528,16 @@ export class GANPlayground extends GANPlaygroundPolymer {
       var learningRate = this.genLearningRate;
       var momentum = this.genMomentum;
       var gamma = this.genGamma;
+      var beta1 = this.genBeta1;
+      var beta2 = this.genBeta2;
       var varName = 'generator';
     } else {
       var selectedOptimizerName = this.discSelectedOptimizerName;
       var learningRate = this.discLearningRate;
       var momentum = this.discMomentum;
       var gamma = this.discGamma;
+      var beta1 = this.discBeta1;
+      var beta2 = this.discBeta2;
       var varName = 'discriminator';
     }
     switch (selectedOptimizerName) {
@@ -521,7 +557,17 @@ export class GANPlayground extends GANPlaygroundPolymer {
             x.name.startsWith(varName)));
       }
       case 'adagrad': {
-        return new AdagradOptimizer(+learningRate, +gamma,
+        return new AdagradOptimizer(+learningRate,
+          this.graph.getNodes().filter((x) => 
+            x.name.startsWith(varName)));
+      }
+      case 'adadelta': {
+        return new AdadeltaOptimizer(+learningRate, +gamma,
+          this.graph.getNodes().filter((x) => 
+            x.name.startsWith(varName)));
+      }
+      case 'adam': {
+        return new AdamOptimizer(+learningRate, +beta1, +beta2,
           this.graph.getNodes().filter((x) => 
             x.name.startsWith(varName)));
       }
